@@ -2,175 +2,171 @@
 inclusion: always
 ---
 
-# 🗄️ Esquema de Datos — ADO Intelligence Platform MVP
+# 🗄️ Esquema de Datos — ADO MobilityIA MVP
+## Hackathon AWS Builders League 2026
 
-> Fuente de verdad para todos los esquemas de tablas, estructuras S3 y formatos de datos del proyecto.
-> Cualquier Lambda, agente o dashboard debe respetar estos esquemas.
+> Fuente de verdad para todos los esquemas de tablas, estructuras S3 y formatos de datos.
+> **C-004:** Todos los datos son **simulados** — generados por script Python, no datos reales de ADO.
+> **C-003:** Los valores de referencia en este esquema son para uso interno del sistema. Las respuestas al usuario usan lenguaje difuso.
 
 ---
 
 ## S3 — Estructura del bucket
 
 ```
-s3://ado-intelligence-mvp/
-├── telemetria-historica/
+s3://ado-mobilityia-mvp/
+├── telemetria-simulada/
 │   └── {YYYY-MM}/
 │       └── {bus_id}/
 │           └── telemetria_{bus_id}_{YYYY-MM-DD}.parquet
-├── fallas-historicas/
-│   └── fallas_historicas_flota.parquet
+├── fallas-simuladas/
+│   └── eventos_mecanicos_simulados.parquet
 ├── knowledge-base/
 │   └── docs/
 │       ├── umbrales-consumo-rutas.csv
 │       ├── codigos-obd-relevantes.pdf
-│       ├── historial-fallas-resumen.csv
+│       ├── patrones-eventos-simulados.csv
 │       ├── normas-conduccion-eficiente.pdf
 │       └── nom-044-resumen.pdf
 └── modelos/
     └── sagemaker/
         └── training-data/
-            └── features_fallas.parquet
+            └── features_eventos_simulados.parquet
 ```
 
 ---
 
-## Esquema: Telemetría histórica (S3 Parquet)
+## Esquema: Telemetría simulada (S3 Parquet)
 
-Archivo fuente migrado desde GCP. Un registro por lectura de sensor (~cada 30 segundos por bus).
+Generado por script Python. Un registro por lectura de sensor simulada (~cada 30 segundos por bus).
 
 | Campo | Tipo | Descripción | Ejemplo |
 |---|---|---|---|
-| `bus_id` | STRING | Identificador único del bus | `BUS-247` |
-| `conductor_id` | STRING | Identificador del conductor | `COND-1042` |
-| `ruta_id` | STRING | Identificador de la ruta | `RUTA-MEX-PUE` |
-| `timestamp_utc` | TIMESTAMP | Fecha y hora UTC de la lectura | `2025-11-15T14:32:00Z` |
-| `latitud` | FLOAT | Coordenada GPS latitud | `19.4326` |
-| `longitud` | FLOAT | Coordenada GPS longitud | `-99.1332` |
-| `velocidad_kmh` | FLOAT | Velocidad en km/h | `87.5` |
-| `rpm` | INTEGER | Revoluciones por minuto del motor | `1850` |
-| `consumo_lkm` | FLOAT | Consumo instantáneo en litros/km | `0.42` |
-| `temperatura_motor_c` | FLOAT | Temperatura del motor en °C | `92.3` |
-| `presion_aceite_psi` | FLOAT | Presión de aceite en PSI | `45.0` |
-| `pct_acelerador` | FLOAT | % apertura del acelerador (0-100) | `35.2` |
-| `pct_freno` | FLOAT | % uso del freno (0-100) | `12.1` |
-| `odometro_km` | FLOAT | Kilómetros totales del odómetro | `187432.5` |
-| `codigo_obd` | STRING | Código OBD activo (null si ninguno) | `P0217` |
-| `nivel_combustible_pct` | FLOAT | % de combustible en tanque | `68.0` |
+| `bus_id` | STRING | ID del bus simulado | `BUS-SIM-247` |
+| `conductor_id` | STRING | ID del conductor simulado | `COND-SIM-1042` |
+| `ruta_id` | STRING | ID de la ruta | `RUTA-MEX-PUE` |
+| `timestamp_utc` | TIMESTAMP | Fecha y hora UTC de la lectura simulada | `2025-11-15T14:32:00Z` |
+| `latitud` | FLOAT | Coordenada GPS simulada | `19.4326` |
+| `longitud` | FLOAT | Coordenada GPS simulada | `-99.1332` |
+| `velocidad_kmh` | FLOAT | Velocidad simulada en km/h | `87.5` |
+| `rpm` | INTEGER | RPM simuladas | `1850` |
+| `consumo_lkm` | FLOAT | Consumo simulado en litros/km | `0.42` |
+| `temperatura_motor_c` | FLOAT | Temperatura simulada en °C | `92.3` |
+| `presion_aceite_psi` | FLOAT | Presión de aceite simulada en PSI | `45.0` |
+| `pct_acelerador` | FLOAT | % acelerador simulado (0-100) | `35.2` |
+| `pct_freno` | FLOAT | % freno simulado (0-100) | `12.1` |
+| `odometro_km` | FLOAT | Odómetro simulado en km | `187432.5` |
+| `codigo_obd` | STRING | Código OBD simulado (null si ninguno) | `P0217` |
+| `nivel_combustible_pct` | FLOAT | % combustible simulado | `68.0` |
 
 ---
 
-## Esquema: Fallas históricas (S3 Parquet)
+## Esquema: Eventos mecánicos simulados (S3 Parquet)
 
-Historial de mantenimientos correctivos y preventivos de la flota.
+Historial de eventos de mantenimiento generado sintéticamente.
 
 | Campo | Tipo | Descripción | Ejemplo |
 |---|---|---|---|
-| `falla_id` | STRING | Identificador único de la falla | `FALLA-2025-08-001` |
-| `bus_id` | STRING | Bus afectado | `BUS-089` |
-| `fecha_deteccion` | DATE | Fecha en que se detectó la falla | `2025-08-12` |
-| `fecha_reparacion` | DATE | Fecha en que se reparó | `2025-08-14` |
-| `codigo_obd_previo` | STRING | Código OBD activo días antes de la falla | `P0217` |
+| `evento_id` | STRING | ID único del evento simulado | `EVT-SIM-2025-08-001` |
+| `bus_id` | STRING | Bus simulado afectado | `BUS-SIM-089` |
+| `fecha_deteccion` | DATE | Fecha simulada de detección | `2025-08-12` |
+| `fecha_resolucion` | DATE | Fecha simulada de resolución | `2025-08-14` |
+| `codigo_obd_previo` | STRING | Código OBD activo días antes | `P0217` |
 | `temperatura_previa_c` | FLOAT | Temperatura promedio 7 días antes | `104.5` |
 | `presion_aceite_previa` | FLOAT | Presión de aceite promedio 7 días antes | `18.2` |
-| `componente_fallado` | STRING | Componente que falló | `bomba_agua` |
-| `descripcion_falla` | STRING | Descripción técnica de la falla | `Falla de bomba de agua por sobrecalentamiento` |
-| `costo_reparacion_mxn` | FLOAT | Costo total de la reparación en MXN | `18500.00` |
-| `horas_fuera_servicio` | FLOAT | Horas que el bus estuvo fuera de servicio | `36.5` |
+| `componente_afectado` | STRING | Componente simulado afectado | `bomba_agua` |
+| `descripcion_evento` | STRING | Descripción técnica simulada | `Evento de refrigeración por temperatura elevada` |
 | `tipo_mantenimiento` | STRING | `CORRECTIVO` o `PREVENTIVO` | `CORRECTIVO` |
-| `dias_desde_ultimo_mant` | INTEGER | Días desde el último mantenimiento | `45` |
-| `km_desde_ultimo_mant` | FLOAT | Km desde el último mantenimiento | `12400.0` |
+| `dias_desde_ultimo_mant` | INTEGER | Días desde último mantenimiento simulado | `45` |
+| `km_desde_ultimo_mant` | FLOAT | Km desde último mantenimiento simulado | `12400.0` |
 
 ---
 
 ## DynamoDB — Tabla: `ado-telemetria-live`
 
-Estado en tiempo real de la flota. Escrita por Lambda simulador, leída por los agentes.
+Estado en tiempo real de la flota simulada. Escrita por Lambda simulador, leída por los agentes.
 
-- **Partition Key (PK):** `bus_id` (String)
-- **Sort Key (SK):** `timestamp` (String — ISO 8601: `2026-04-22T14:32:00.000Z`)
-- **TTL:** `ttl_expiry` — registros expiran automáticamente después de 24 horas
+- **PK:** `bus_id` (String) — ej: `BUS-SIM-247`
+- **SK:** `timestamp` (String ISO 8601)
+- **TTL:** `ttl_expiry` — expira en 24 horas
 
 | Atributo | Tipo | Descripción |
 |---|---|---|
-| `bus_id` | S | PK — Identificador del bus |
+| `bus_id` | S | PK — ID del bus simulado |
 | `timestamp` | S | SK — Timestamp ISO 8601 |
-| `conductor_id` | S | Conductor activo |
+| `conductor_id` | S | Conductor simulado activo |
 | `ruta_id` | S | Ruta activa |
-| `velocidad_kmh` | N | Velocidad actual |
-| `rpm` | N | RPM actual |
-| `consumo_lkm` | N | Consumo instantáneo L/km |
-| `temperatura_motor_c` | N | Temperatura motor °C |
-| `presion_aceite_psi` | N | Presión aceite PSI |
-| `pct_acelerador` | N | % acelerador |
-| `pct_freno` | N | % freno |
-| `odometro_km` | N | Odómetro actual |
-| `codigo_obd` | S | Código OBD activo (vacío si ninguno) |
-| `nivel_combustible_pct` | N | % combustible en tanque |
-| `estado_consumo` | S | `EFICIENTE`, `ALERTA_AMARILLA`, `ALERTA_ROJA` |
-| `ttl_expiry` | N | Unix timestamp de expiración (now + 86400) |
+| `velocidad_kmh` | N | Velocidad actual simulada |
+| `rpm` | N | RPM actual simulado |
+| `consumo_lkm` | N | Consumo instantáneo simulado |
+| `temperatura_motor_c` | N | Temperatura motor simulada |
+| `presion_aceite_psi` | N | Presión aceite simulada |
+| `pct_acelerador` | N | % acelerador simulado |
+| `pct_freno` | N | % freno simulado |
+| `odometro_km` | N | Odómetro simulado |
+| `codigo_obd` | S | Código OBD simulado (vacío si ninguno) |
+| `nivel_combustible_pct` | N | % combustible simulado |
+| `estado_consumo` | S | `EFICIENTE`, `ALERTA_MODERADA`, `ALERTA_SIGNIFICATIVA` |
+| `ttl_expiry` | N | Unix timestamp de expiración |
 
-**Índice secundario global (GSI):**
-- `ruta_id-timestamp-index`: para consultar todos los buses activos en una ruta
+**GSI:** `ruta_id-timestamp-index`
 
 ---
 
 ## DynamoDB — Tabla: `ado-alertas`
 
-Registro de alertas y órdenes de trabajo generadas por los agentes.
+Recomendaciones y alertas generadas por los agentes.
 
-- **Partition Key (PK):** `alerta_id` (String — UUID v4)
-- **Sort Key (SK):** `timestamp` (String — ISO 8601)
+- **PK:** `alerta_id` (String UUID)
+- **SK:** `timestamp` (String ISO 8601)
 
 | Atributo | Tipo | Descripción |
 |---|---|---|
 | `alerta_id` | S | PK — UUID único |
 | `timestamp` | S | SK — Timestamp de creación |
-| `bus_id` | S | Bus relacionado |
+| `bus_id` | S | Bus simulado relacionado |
 | `tipo_alerta` | S | `COMBUSTIBLE` o `MANTENIMIENTO` |
-| `nivel` | S | `VERDE`, `AMARILLO`, `ROJO` |
+| `nivel` | S | `BAJO`, `MODERADO`, `ELEVADO`, `CRITICO` |
 | `titulo` | S | Título corto de la alerta |
-| `descripcion` | S | Descripción completa generada por el agente |
-| `probabilidad_falla` | N | Solo para MANTENIMIENTO (0.0 - 1.0) |
-| `ahorro_estimado_mxn` | N | Solo para COMBUSTIBLE |
+| `descripcion` | S | Descripción generada por el agente (lenguaje difuso) |
+| `nivel_riesgo_cualitativo` | S | Descripción cualitativa del riesgo |
 | `urgencia` | S | `INMEDIATA`, `ESTA_SEMANA`, `PROXIMO_SERVICIO` |
-| `componentes` | L | Lista de componentes a revisar (solo MANTENIMIENTO) |
-| `numero_ot` | S | Número de orden de trabajo (solo MANTENIMIENTO) |
+| `componentes` | L | Lista de componentes a revisar |
+| `numero_referencia` | S | Número de referencia OT (solo MANTENIMIENTO) |
 | `estado` | S | `ACTIVA`, `EN_PROCESO`, `RESUELTA` |
 | `agente_origen` | S | `ado-agente-combustible` o `ado-agente-mantenimiento` |
 
 ---
 
-## Esquema: Features para modelo SageMaker
-
-Dataset de entrenamiento para el modelo de predicción de fallas.
+## Esquema: Features para modelo SageMaker (datos simulados)
 
 | Feature | Tipo | Descripción |
 |---|---|---|
-| `temperatura_motor_avg_7d` | FLOAT | Temperatura promedio últimos 7 días |
-| `temperatura_motor_max_7d` | FLOAT | Temperatura máxima últimos 7 días |
-| `presion_aceite_avg_7d` | FLOAT | Presión de aceite promedio últimos 7 días |
-| `presion_aceite_min_7d` | FLOAT | Presión de aceite mínima últimos 7 días |
+| `temperatura_motor_avg_7d` | FLOAT | Temperatura promedio últimos 7 días (simulado) |
+| `temperatura_motor_max_7d` | FLOAT | Temperatura máxima últimos 7 días (simulado) |
+| `presion_aceite_avg_7d` | FLOAT | Presión de aceite promedio últimos 7 días (simulado) |
+| `presion_aceite_min_7d` | FLOAT | Presión de aceite mínima últimos 7 días (simulado) |
 | `tiene_codigo_obd` | INTEGER | 1 si hay código OBD activo, 0 si no |
-| `codigo_obd_categoria` | INTEGER | Categoría del código (0=ninguno, 1=motor, 2=transmisión, 3=frenos, 4=otro) |
-| `rpm_avg_7d` | FLOAT | RPM promedio últimos 7 días |
-| `km_desde_ultimo_mant` | FLOAT | Kilómetros desde último mantenimiento |
-| `dias_desde_ultimo_mant` | INTEGER | Días desde último mantenimiento |
-| `pct_freno_avg_7d` | FLOAT | % uso de freno promedio últimos 7 días |
-| `edad_bus_años` | FLOAT | Antigüedad del bus en años |
-| **`falla_14_dias`** | INTEGER | **TARGET**: 1 si falló en los próximos 14 días, 0 si no |
+| `codigo_obd_categoria` | INTEGER | 0=ninguno, 1=motor, 2=transmisión, 3=frenos, 4=otro |
+| `rpm_avg_7d` | FLOAT | RPM promedio últimos 7 días (simulado) |
+| `km_desde_ultimo_mant` | FLOAT | Km desde último mantenimiento (simulado) |
+| `dias_desde_ultimo_mant` | INTEGER | Días desde último mantenimiento (simulado) |
+| `pct_freno_avg_7d` | FLOAT | % uso de freno promedio últimos 7 días (simulado) |
+| `edad_bus_años` | FLOAT | Antigüedad simulada del bus en años |
+| **`evento_14_dias`** | INTEGER | **TARGET**: 1 si hubo evento en los próximos 14 días, 0 si no |
 
 ---
 
-## Umbrales de consumo por ruta (referencia)
+## Rutas simuladas de referencia
 
-Valores de referencia para el cálculo de desviaciones. Cargar en Knowledge Base.
+| ruta_id | descripcion | consumo_base_lkm |
+|---|---|---|
+| `RUTA-MEX-PUE` | México - Puebla | 0.38 |
+| `RUTA-MEX-GDL` | México - Guadalajara | 0.41 |
+| `RUTA-MEX-MTY` | México - Monterrey | 0.44 |
+| `RUTA-VER-MEX` | Veracruz - México | 0.40 |
+| `RUTA-MEX-OAX` | México - Oaxaca | 0.45 |
+| `RUTA-MEX-QRO` | México - Querétaro | 0.36 |
+| `RUTA-MEX-CUN` | México - Cancún | 0.47 |
 
-| ruta_id | descripcion | consumo_base_lkm | tolerancia_pct |
-|---|---|---|---|
-| `RUTA-MEX-PUE` | México - Puebla | 0.38 | 5 |
-| `RUTA-MEX-GDL` | México - Guadalajara | 0.41 | 5 |
-| `RUTA-MEX-MTY` | México - Monterrey | 0.44 | 5 |
-| `RUTA-VER-MEX` | Veracruz - México | 0.40 | 5 |
-| `RUTA-MEX-OAX` | México - Oaxaca | 0.45 | 7 |
-| `RUTA-MEX-QRO` | México - Querétaro | 0.36 | 5 |
-| `RUTA-MEX-CUN` | México - Cancún | 0.47 | 7 |
+> Nota: estos valores son de referencia interna para el sistema. Las respuestas de los agentes al usuario no deben mencionar estos valores numéricos (C-003).
