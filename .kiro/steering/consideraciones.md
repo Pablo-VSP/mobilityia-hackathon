@@ -34,10 +34,26 @@ inclusion: always
   - La arquitectura se simplifica significativamente en la capa de ingesta
   - Los datos en S3 son el punto de partida real; Lambda simula el flujo "en vivo" para la demo
 
+### C-003 — Evitar uso de métricas por magnitudes definidas
+- **Fecha:** 2026-04-23
+- **Estado:** ✅ Activa 
+- **Descripción:** El proyecto deberá evitar mencionar magnitudes definidas como métricas por ejemplo: 
+| Beneficio | Impacto cuantificado |
+|---|---|
+| Reducción de consumo de combustible | 8–15% → hasta **$2.8M MXN/mes** en ahorro directo |
+| Anticipación de fallas mecánicas | 75–85% de fallas anticipadas → reducción 3–5x en costo de mantenimiento |
+| Estandarización de conducción | Variabilidad entre conductores: de 18% → 7% |
+| Evidencia regulatoria | **2,400 toneladas de CO₂** reducidas documentadas y auditables en 90 días |
+
+En lugar de ello debe mencionar mejoras en lenguaje difuso tal que "Aumento", "Mayor", "Menor" y demás adaptaciones sin mencionar valores numéricos específicos que podrían caer en información sin fundamentos al tratarse de un proyecto MVP por simulación para un Hackathon.
+
+- **Impacto:**
+  - Eliminar métricas con magnitudes numéricas y sustituirlas por lenguaje difuso
+  - Se debe reescribir todo el flujo de planeación, archivos de steering files y redefinir el ITP-LATAM-WB-Workshop.md respecto a esta nueva consideración.
 ---
 
 ## 🕐 CONSIDERACIONES PENDIENTES DE APLICAR
-*(Ninguna por el momento)*
+*C-003 — Evitar uso de métricas por magnitudes definidas*
 
 ---
 
