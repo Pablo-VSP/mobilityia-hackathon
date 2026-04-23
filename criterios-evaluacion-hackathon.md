@@ -56,16 +56,17 @@ Mobility ADO ya dispone de los elementos fundamentales (datos, infraestructura y
 Una plataforma de optimización de flota basada en inteligencia artificial, construida sobre **Amazon Bedrock AgentCore**, que transforma datos telemétricos en decisiones operativas accionables.
 
 #### Arquitectura general
-
+```
 Datos históricos GCP → S3 (Data Lake) → Lambda Simulador → DynamoDB
-↓
-Amazon Bedrock AgentCore
-┌──────────────────────────────┐
-│ Agente Combustible │
-│ Agente Mantenimiento │
-└──────────────────────────────┘
-↓
-Dashboard QuickSight
+                                                               ↓
+                                         Amazon Bedrock AgentCore
+                                    ┌──────────────────────────────┐
+                                    │  Agente Combustible          │
+                                    │  Agente Mantenimiento        │
+                                    └──────────────────────────────┘
+                                                   ↓
+                                    Dashboard QuickSight (Jurado)
+```
 
 ### Componentes principales
 
