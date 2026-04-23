@@ -2,10 +2,12 @@
 inclusion: manual
 ---
 
-# 🎬 Guión de Demo — ADO Intelligence Platform
-## Hackathon AWS ITP LATAM | Presentación ante el Jurado
+# 🎬 Guión de Demo — ADO MobilityIA
+## Hackathon AWS Builders League 2026
 
-> Inclusion: manual — cargar este archivo solo cuando se esté preparando o ensayando la demo.
+> Inclusion: manual — cargar solo cuando se prepare o ensaye la demo.
+> **C-003:** Nunca mencionar valores numéricos específicos de mejora en la presentación.
+> **C-004:** Aclarar al jurado que los datos son simulados por seguridad corporativa.
 
 ---
 
@@ -16,48 +18,47 @@ inclusion: manual
 | Problema y contexto | 2 min | Presentador 1 |
 | Solución y arquitectura | 2 min | Presentador 2 |
 | Demo en vivo | 4 min | Presentador técnico |
-| Resultados e impacto | 1 min | Presentador 1 |
-| Cierre y llamada a acción | 1 min | Cualquiera |
+| Impacto estimado y cierre | 2 min | Presentador 1 |
 
 ---
 
 ## PARTE 1 — Problema y Contexto (2 min)
 
 ### Mensaje central
-> "Mobility ADO gasta millones en combustible sin saber por qué, y sus buses fallan en carretera porque no hay forma de anticiparlo. Hoy eso cambia."
+> "Mobility ADO ya tiene los datos. El problema es que esos datos nunca se convirtieron en inteligencia operativa. Hasta hoy."
 
-### Puntos clave a mencionar
-- Combustible = 35–45% del costo operativo total de ADO
-- Variabilidad de consumo entre conductores: hasta 40% en la misma ruta
-- Mantenimiento correctivo cuesta 3–5x más que el preventivo
-- Sin datos estructurados, ADO no puede demostrar reducción de emisiones ante reguladores
+### Puntos clave
+- El combustible es el mayor costo operativo de ADO — sin visibilidad granular, no se puede controlar
+- El mantenimiento es reactivo — las unidades fallan en carretera porque no hay forma de anticiparlo
+- Sin datos estructurados de emisiones, el cumplimiento regulatorio ambiental es difícil de demostrar
+- ADO ya tiene GPS en cada bus — la oportunidad es convertir esa telemetría en decisiones
 
 ### Frase de cierre del segmento
-> "El problema no es la falta de datos — ADO ya tiene GPS en cada bus. El problema es que esos datos nunca se convirtieron en inteligencia. Hasta hoy."
+> "El problema no es la falta de datos. Es la falta de inteligencia para convertirlos en acción."
 
 ---
 
 ## PARTE 2 — Solución y Arquitectura (2 min)
 
 ### Mensaje central
-> "ADO Intelligence Platform: dos agentes autónomos de IA que convierten telemetría en decisiones en tiempo real."
+> "ADO MobilityIA: dos agentes autónomos de IA que convierten telemetría en decisiones operativas en tiempo real, construidos sobre Amazon Bedrock AgentCore."
 
-### Mostrar diagrama de arquitectura simplificado
+### Mostrar diagrama de arquitectura
 ```
-Datos históricos GCP → S3 → Lambda Simulador → DynamoDB
-                                                    ↓
-                              Amazon Bedrock AgentCore
-                              ┌─────────────────────────┐
-                              │ Agente Combustible      │
-                              │ Agente Mantenimiento    │
-                              └─────────────────────────┘
-                                          ↓
-                              Dashboard QuickSight
+Datos simulados → S3 → Lambda Simulador → DynamoDB
+                                              ↓
+                          Amazon Bedrock AgentCore
+                     ┌──────────────────────────────┐
+                     │  Agente Combustible           │
+                     │  Agente Mantenimiento         │
+                     └──────────────────────────────┘
+                                   ↓
+                       Dashboard QuickSight
 ```
 
-### Puntos clave a mencionar
-- Construido sobre **Amazon Bedrock AgentCore** — tecnología de agentes autónomos de AWS
-- Datos históricos reales de la flota ADO migrados desde GCP
+### Puntos clave
+- Construido sobre **Amazon Bedrock AgentCore** — orquestación nativa de agentes autónomos
+- Datos simulados que replican fielmente la operación real de ADO (seguridad corporativa)
 - Respuestas en español, en lenguaje operativo — no reportes técnicos
 - Integración sobre infraestructura existente — sin reemplazar hardware
 
@@ -66,119 +67,104 @@ Datos históricos GCP → S3 → Lambda Simulador → DynamoDB
 ## PARTE 3 — Demo en Vivo (4 min)
 
 ### Preparación pre-demo (hacer ANTES de subir al escenario)
-- [ ] Lambda simulador corriendo — verificar que DynamoDB tiene registros de los últimos 5 min
+- [ ] Lambda simulador corriendo — DynamoDB con registros de los últimos 5 min
 - [ ] Consola de Bedrock abierta con ambos agentes listos
-- [ ] Dashboard QuickSight cargado y mostrando datos
-- [ ] Datos "trampa" pre-cargados: BUS-247 en ALERTA_ROJA, BUS-089 con código OBD P0217
+- [ ] Dashboard QuickSight cargado con datos simulados
+- [ ] Datos "trampa" pre-cargados: BUS-SIM-247 en ALERTA_SIGNIFICATIVA, BUS-SIM-089 con código OBD P0217
 
 ### Secuencia de demo
 
 #### Paso 1 — Mostrar el simulador funcionando (30 seg)
-> "Primero, veamos el corazón del sistema. Esta Lambda está inyectando telemetría en tiempo real de 15 buses activos de la flota ADO. Cada registro que ven aquí es un bus real, en una ruta real, con datos reales."
+> "Primero, el corazón del sistema. Esta Lambda está inyectando telemetría simulada de 15 buses en tiempo real. Cada registro representa un bus en una ruta, con datos que replican fielmente la variabilidad de una flota real."
 
 - Mostrar DynamoDB con registros actualizándose
 - Señalar: bus_id, ruta_id, consumo_lkm, estado_consumo
 
 #### Paso 2 — Agente Combustible (1.5 min)
-> "Ahora le pregunto al Agente de Combustible qué está pasando en la flota en este momento."
+> "Le pregunto al Agente de Combustible qué está pasando en la flota ahora mismo."
 
-**Pregunta 1 (panorama general):**
+**Pregunta 1:**
 ```
-¿Qué buses están consumiendo más combustible del esperado ahora mismo?
+¿Qué buses están mostrando mayor consumo del esperado en este momento?
 ```
-*Esperar respuesta — el agente debe listar buses en alerta con % de desviación*
+*El agente lista buses con desviaciones usando lenguaje difuso — sin porcentajes*
 
-**Pregunta 2 (drill-down):**
+**Pregunta 2:**
 ```
-Analiza el Bus 247 en la ruta México-Puebla. ¿Qué está causando la desviación y cuánto nos está costando?
+Analiza el Bus SIM-247 en la ruta México-Puebla. ¿Qué está causando la desviación?
 ```
-*Esperar respuesta — el agente debe identificar causa (aceleración brusca) y calcular costo en MXN*
+*El agente identifica causa y genera recomendación accionable sin valores numéricos*
 
-> "En segundos, el agente identificó la causa, cuantificó el impacto económico y generó una recomendación accionable para el supervisor. Esto antes tomaba semanas de análisis manual."
+> "En segundos, el agente identificó la causa, describió el impacto operativo y generó una recomendación para el supervisor. Sin reportes manuales, sin esperar fin de mes."
 
 #### Paso 3 — Agente Mantenimiento (1.5 min)
-> "Ahora el Agente de Mantenimiento. Este es el que puede salvar una unidad antes de que falle en carretera."
+> "Ahora el Agente de Mantenimiento — el que puede evitar que una unidad falle en carretera."
 
-**Pregunta 3 (riesgo de flota):**
+**Pregunta 3:**
 ```
-¿Qué buses tienen mayor riesgo de falla mecánica esta semana?
+¿Qué buses tienen mayor riesgo de evento mecánico esta semana?
 ```
-*Esperar respuesta — debe mostrar lista con probabilidades*
+*El agente lista buses con nivel de riesgo cualitativo*
 
-**Pregunta 4 (orden de trabajo):**
+**Pregunta 4:**
 ```
-Analiza el Bus 089 y genera la orden de trabajo si es necesario.
+Analiza el Bus SIM-089 y genera una recomendación si es necesario.
 ```
-*Esperar respuesta — debe generar OT con número, diagnóstico, componentes y urgencia*
+*El agente genera recomendación preventiva con diagnóstico y urgencia*
 
-> "El sistema detectó que el Bus 089 muestra el mismo patrón de temperatura que precedió 23 fallas históricas de bomba de agua. Generó la orden de trabajo preventiva antes de que el conductor note cualquier síntoma."
+> "El sistema detectó señales consistentes con patrones previos a eventos de refrigeración. Generó la recomendación preventiva antes de que el conductor note cualquier síntoma."
 
 #### Paso 4 — Dashboard (30 seg)
-> "Y todo esto se refleja en tiempo real en el dashboard ejecutivo."
+> "Todo esto se refleja en tiempo real en el dashboard ejecutivo."
 
-- Mostrar QuickSight: mapa de flota, alertas activas, ahorro acumulado, CO₂ reducido
-- Señalar: "Este es el reporte que el Director de Operaciones ve cada mañana."
+- Mostrar QuickSight: estado de flota, alertas activas, métricas de eficiencia, CO₂ estimado
+- "Este es el panel que el Director de Operaciones consulta cada mañana."
 
 ---
 
-## PARTE 4 — Resultados e Impacto (1 min)
+## PARTE 4 — Impacto Estimado y Cierre (2 min)
 
-### Números del piloto (mencionar con confianza)
-| Métrica | Resultado |
+### Impacto (lenguaje difuso — C-003)
+
+| Área | Impacto estimado |
 |---|---|
-| Reducción de consumo de combustible | **12%** (2.8M MXN/mes en ahorro) |
-| Fallas mecánicas anticipadas | **78%** antes de manifestarse |
-| Reducción de variabilidad entre conductores | De 18% → **7%** |
-| Reducción de CO₂ | **2,400 toneladas** en 90 días |
+| Consumo de combustible | Mejora potencial por viaje identificada y accionable |
+| Disponibilidad de flota | Mayor disponibilidad por anticipación de eventos |
+| Variabilidad operativa | Reducción sostenida entre unidades y conductores |
+| Cumplimiento ambiental | Métricas de reducción de CO₂ visibles y auditables |
 
-### Frase de impacto
-> "Cada mes sin este sistema, ADO está dejando 2.8 millones de pesos sobre la mesa. Y eso es solo en combustible."
+### Frase de cierre
+> "ADO MobilityIA no reemplaza la experiencia de los equipos de ADO — la amplifica. Le da al supervisor información que antes no tenía. Le da al taller tiempo para prepararse. Le da al director evidencia para tomar decisiones. Y todo esto, sobre datos que ADO ya genera hoy."
 
----
-
-## PARTE 5 — Cierre (1 min)
-
-### Mensaje final
-> "ADO Intelligence Platform no es un dashboard más. Es el primer sistema en México que convierte la telemetría de una flota de transporte en decisiones autónomas en tiempo real. Construido sobre Amazon Bedrock AgentCore, con datos reales, resultados verificables y listo para escalar a las 2,000 unidades de ADO."
-
-### Llamada a acción para el jurado
-> "La pregunta no es si ADO necesita esto. La pregunta es cuánto le está costando cada día que no lo tiene."
+### Llamada a acción
+> "La pregunta no es si ADO necesita esto. La pregunta es cuánto valor operativo se está dejando sobre la mesa cada día sin convertir esos datos en inteligencia."
 
 ---
 
 ## Plan de contingencia
 
-### Si el agente tarda más de 30 segundos en responder
-- Decir: "Mientras el agente procesa, déjenme mostrarles el dashboard con los resultados de las últimas horas..."
-- Cambiar a QuickSight mientras espera
-
-### Si hay error en Bedrock
-- Tener capturas de pantalla de respuestas pre-grabadas en una presentación de respaldo
-- Decir: "Les muestro una respuesta típica del sistema..." y mostrar el screenshot
-
-### Si DynamoDB no tiene datos frescos
-- Disparar Lambda simulador manualmente desde la consola AWS
-- Tener datos pre-cargados como respaldo (no depender solo del simulador en vivo)
-
-### Si QuickSight no carga
-- Mostrar capturas de pantalla del dashboard en los slides
-- Continuar con la demo de los agentes que es el punto más fuerte
+| Problema | Acción |
+|---|---|
+| Agente tarda más de 30 segundos | Cambiar a QuickSight mientras espera |
+| Error en Bedrock | Mostrar capturas pre-grabadas de respuestas |
+| DynamoDB sin datos frescos | Disparar Lambda simulador manualmente |
+| QuickSight no carga | Mostrar capturas del dashboard en slides |
 
 ---
 
 ## Preguntas frecuentes del jurado
 
-**"¿Cómo escalan esto a 2,000 buses en producción?"**
-> "La arquitectura está diseñada para eso. En producción, Lambda se reemplaza por AWS IoT Core + Kinesis para ingesta real. Bedrock AgentCore escala horizontalmente. El MVP demuestra la lógica de negocio — la infraestructura de producción es un paso de configuración, no de rediseño."
+**"¿Por qué datos simulados y no datos reales de ADO?"**
+> "Por seguridad de la información corporativa. Los datos operativos de una flota de esta escala son activos estratégicos sensibles. Los datos simulados replican fielmente la estructura y variabilidad de la operación real, permitiendo demostrar el valor del sistema sin comprometer información confidencial."
 
-**"¿Qué tan precisos son los datos del piloto?"**
-> "Los datos son históricos reales de la flota ADO migrados desde GCP. El 12% de reducción de combustible y el 78% de anticipación de fallas son métricas calculadas sobre esos datos reales, no proyecciones teóricas."
+**"¿Cómo escalan esto a producción?"**
+> "En producción, Lambda se reemplaza por AWS IoT Core + Kinesis para ingesta real desde los GPS de los buses. Bedrock AgentCore escala horizontalmente. El MVP demuestra la lógica de negocio — la infraestructura de producción es un paso de configuración, no de rediseño."
 
-**"¿Por qué Amazon Bedrock y no otra plataforma de IA?"**
-> "Bedrock AgentCore es la única plataforma que ofrece orquestación nativa de agentes autónomos con memoria, herramientas y RAG integrados en un solo servicio. Para un caso de uso que requiere múltiples agentes coordinados con acceso a datos en tiempo real, es la opción más directa y escalable del mercado."
+**"¿Por qué Amazon Bedrock y no otra plataforma?"**
+> "Bedrock AgentCore es la única plataforma que ofrece orquestación nativa de agentes autónomos con memoria, herramientas y RAG integrados en un solo servicio managed. Para un caso de uso que requiere múltiples agentes coordinados con acceso a datos en tiempo real, es la opción más directa y escalable."
 
 **"¿Cómo manejan la resistencia de los conductores al monitoreo?"**
-> "El sistema está diseñado explícitamente para esto. Los agentes nunca generan reportes punitivos — generan recomendaciones de desarrollo profesional. El conductor recibe coaching, no una sanción. Eso está codificado en el system prompt de los agentes."
+> "El sistema está diseñado explícitamente para esto. Los agentes generan recomendaciones de desarrollo profesional, no reportes punitivos. Eso está codificado en el system prompt — el conductor recibe coaching, no una sanción."
 
-**"¿Cuál es el costo de AWS para operar esto?"**
-> "Para el MVP del hackathon, menos de $500 USD. En producción con 2,000 buses, el modelo de costos de Bedrock por token y Lambda por invocación hace que el costo operativo sea marginal comparado con el ahorro de 2.8M MXN mensuales en combustible."
+**"¿Cuánto cuesta operar esto en AWS?"**
+> "Para el MVP del hackathon, el costo es marginal. En producción, el modelo de costos de Bedrock por token y Lambda por invocación hace que la inversión tecnológica sea significativamente menor que el valor operativo generado por la optimización de combustible y la reducción de mantenimiento correctivo."

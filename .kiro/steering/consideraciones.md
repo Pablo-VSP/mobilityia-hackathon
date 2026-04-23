@@ -50,11 +50,19 @@ En lugar de ello debe mencionar mejoras en lenguaje difuso tal que "Aumento", "M
 - **Impacto:**
   - Eliminar métricas con magnitudes numéricas y sustituirlas por lenguaje difuso
   - Se debe reescribir todo el flujo de planeación, archivos de steering files y redefinir el ITP-LATAM-WB-Workshop.md respecto a esta nueva consideración.
+
+
+### C-004 — El proyecto se trabajará con datos simulados para mantener un tema de seguridad de la información corporativa para este proyecto MVP 
+- **Fecha:** 2026-04-23
+- **Estado:** ✅ Activa
+- **Descripción:** Se debe considerar que la ingesta de datos al bucket de S3 se hará con datos simulados para fines de presentación del proyecto beta en el hackathon.
+- **Impacto:**
+  - En lugar de datos históricos se hablará de usar datos simulados
+  - Se debe reescribir todo el flujo de planeación, archivos de steering files y redefinir el ITP-LATAM-WB-Workshop.md respecto a esta nueva consideración.
 ---
 
 ## 🕐 CONSIDERACIONES PENDIENTES DE APLICAR
-*C-003 — Evitar uso de métricas por magnitudes definidas*
-
+*(Ninguna por el momento — C-003 y C-004 aplicadas en todos los archivos del proyecto)*
 ---
 
 ## 📝 PLANTILLA PARA NUEVA CONSIDERACIÓN
