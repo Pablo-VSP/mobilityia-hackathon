@@ -1,0 +1,372 @@
+[
+    {
+        "unidad": "l",
+        "minimo": -6.75,
+        "tipo": "FLOAT",
+        "name": "Nivel de aceite litros",
+        "maximo": 0.0,
+        "delta": 3.0,
+        "id": 10098,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "bit",
+        "minimo": 0.0,
+        "tipo": "INTEGER",
+        "name": "Interruptor del freno de estacionamiento",
+        "maximo": 1.0,
+        "delta": 1.0,
+        "id": 70,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "bit",
+        "minimo": 0.0,
+        "tipo": "INTEGER",
+        "name": "Brake Switch",
+        "maximo": 1.0,
+        "delta": 1.0,
+        "id": 597,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "bit",
+        "minimo": 0.0,
+        "tipo": "INTEGER",
+        "name": "Cruise Control Enable Switch",
+        "maximo": 1.0,
+        "delta": 1.0,
+        "id": 596,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "bit",
+        "minimo": 0.0,
+        "tipo": "INTEGER",
+        "name": "Clutch Switch",
+        "maximo": 1.0,
+        "delta": 1.0,
+        "id": 598,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "bit",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Cruise Control States",
+        "maximo": 6.0,
+        "delta": 6.0,
+        "id": 527,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "Marcha",
+        "minimo": -3.0,
+        "tipo": "INTEGER",
+        "name": "Marchas",
+        "maximo": 16.0,
+        "delta": 5.0,
+        "id": 523,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Posicion Pedal Acelerador",
+        "maximo": 100.0,
+        "delta": 80.0,
+        "id": 91,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "L/h",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Tasa de combustible",
+        "maximo": 100.0,
+        "delta": 45.0,
+        "id": 183,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Porcentaje Torque",
+        "maximo": 100.0,
+        "delta": 75.0,
+        "id": 513,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Nivel de anticongelante",
+        "maximo": 110.0,
+        "delta": 95.0,
+        "id": 111,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Nivel de aceite",
+        "maximo": 110.0,
+        "delta": 22.0,
+        "id": 98,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "km/h",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Velocidad tacografo",
+        "maximo": 120.0,
+        "delta": 10.0,
+        "id": 1624,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Nivel Combustible",
+        "maximo": 120.0,
+        "delta": 8.0,
+        "id": 96,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "km/h",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Velocidad Km/h",
+        "maximo": 120.0,
+        "delta": 12.0,
+        "id": 84,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "%",
+        "minimo": -125.0,
+        "tipo": "FLOAT",
+        "name": "Retarder Percent Torque",
+        "maximo": 125.0,
+        "delta": 90.0,
+        "id": 520,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "°C",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Temperatura Aceite Motor",
+        "maximo": 150.0,
+        "delta": 2.0,
+        "id": 175,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "°C",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Temperatura Motor",
+        "maximo": 150.0,
+        "delta": 3.0,
+        "id": 110,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "kpa",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Presion Aceite  Motor",
+        "maximo": 1000.0,
+        "delta": 100.0,
+        "id": 100,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "rpm",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "RPM",
+        "maximo": 3000.0,
+        "delta": 360.0,
+        "id": 190,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "L",
+        "minimo": 1.0,
+        "tipo": "FLOAT",
+        "name": "Combustible Consumido",
+        "maximo": 4211081.22,
+        "delta": 1.0,
+        "id": 250,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "h",
+        "minimo": 1.0,
+        "tipo": "FLOAT",
+        "name": "Horas Motor",
+        "maximo": 214748364,
+        "delta": 0.01,
+        "id": 247,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "km",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Odometro",
+        "maximo": 691207984.6,
+        "delta": 1.0,
+        "id": 917,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "% Restante de balata, trasero derecho 1",
+        "maximo": 100.0,
+        "delta": 1.0,
+        "id": 1102,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "% Restante de balata, delantero izquierdo",
+        "maximo": 100.0,
+        "delta": 1.0,
+        "id": 1099,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "% Restante de balata, trasero derecho 2",
+        "maximo": 100.0,
+        "delta": 1.0,
+        "id": 1104,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "% Restante de balata, trasero izquierdo 1",
+        "maximo": 100.0,
+        "delta": 1.0,
+        "id": 1101,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "% Restante de balata, delantero derecho",
+        "maximo": 100.0,
+        "delta": 1.0,
+        "id": 1100,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "% Restante de balata, trasero izquierdo 2",
+        "maximo": 100.0,
+        "delta": 1.0,
+        "id": 1103,
+        "variable_tipo": "inicio_fin"
+    },
+    {
+        "unidad": "V",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Voltaje de bateria minimo historico",
+        "maximo": 36.0,
+        "delta": 10.0,
+        "id": 20001,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "V",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Voltaje de bateria sin alternador",
+        "maximo": 36.0,
+        "delta": 4.0,
+        "id": 20000,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "V",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Voltaje Bateria",
+        "maximo": 36.0,
+        "delta": 0.5,
+        "id": 168,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "km/L",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Rendimiento",
+        "maximo": 50.0,
+        "delta": 0.0,
+        "id": 185,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "km/L",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Ahorro de combustible instantáneo",
+        "maximo": 50.0,
+        "delta": 31.0,
+        "id": 184,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "°C",
+        "minimo": -10.0,
+        "tipo": "FLOAT",
+        "name": "Temperatura ambiente",
+        "maximo": 75.0,
+        "delta": 0.5,
+        "id": 171,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Posicion Pedal Freno",
+        "maximo": 100.0,
+        "delta": 30.0,
+        "id": 521,
+        "variable_tipo": "EDA"
+    },
+    {
+        "unidad": "%",
+        "minimo": 0.0,
+        "tipo": "FLOAT",
+        "name": "Nivel Urea",
+        "maximo": 100.0,
+        "delta": 2.0,
+        "id": 1761,
+        "variable_tipo": "EDA"
+    }
+]
