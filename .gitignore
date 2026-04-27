@@ -26,6 +26,10 @@ npm-debug.log
 *.pem
 *.key
 
+# GCP credentials
+credentials.json
+datos_spn/credentials.json
+
 # Logs
 *.log
 logs/
