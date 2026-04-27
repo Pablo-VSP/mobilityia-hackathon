@@ -37,3 +37,4 @@ logs/
 # Temp
 *.tmp
 *.bak
+.kiro/settings/mcp.json
