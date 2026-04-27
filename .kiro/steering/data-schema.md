@@ -16,14 +16,15 @@ inclusion: always
 ## S3 — Estructura del bucket
 
 ```
-s3://ado-mobilityia-mvp/
-├── telemetria-simulada/                  ← Datos de telemetry-data (Parquet)
-│   └── {YYYY-MM}/
-│       └── {autobus}/
-│           └── telemetria_{autobus}_{YYYY-MM-DD}.parquet
-├── fallas-simuladas/                     ← Datos de data_fault (Parquet)
-│   └── data_fault.parquet
-├── catalogo/                             ← Catálogo SPN maestro
+s3://ado-telemetry-mvp/hackathon-data/
+├── raw/
+│   ├── travel_telemetry/                 ← 1,339 archivos Parquet (~447 MB)
+│   │   └── travel_telemetry_000000000000.parquet ... 
+│   ├── data_fault/                       ← 123 archivos Parquet (~6.5 MB)
+│   │   └── data_fault_000000000000.parquet ...
+│   └── motor_spn/                        ← 1 archivo Parquet (~3.6 KB)
+│       └── motor_spn_000000000000.parquet
+├── catalogo/                             ← Catálogo SPN en JSON (para Lambdas)
 │   └── motor_spn.json
 ├── knowledge-base/
 │   └── docs/
@@ -38,6 +39,8 @@ s3://ado-mobilityia-mvp/
         └── training-data/
             └── features_eventos_simulados.parquet
 ```
+
+> **Nota:** El bucket real es `ado-telemetry-mvp` en `us-east-2`, profile `mobilityadods`. Los datos raw ya están subidos.
 
 ---
 
