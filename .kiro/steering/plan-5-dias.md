@@ -69,10 +69,13 @@ inclusion: always
 > **Objetivo:** Ambos agentes respondiendo en español con datos simulados.
 
 #### 2.1 Knowledge Base
-- [ ] Crear Knowledge Base en Bedrock
-  - Data source: `s3://ado-mobilityia-mvp/knowledge-base/docs/`
-  - Embeddings: Amazon Titan Text Embeddings v2
-- [ ] Sincronizar y verificar indexación
+- [x] Crear Knowledge Base en Bedrock: `ado-mobilityia-kb` (ID: `4OAVLRB8VI`)
+  - Data source: `manuales-y-catalogos` (ID: `LL4E15XKR4`)
+  - S3: `s3://ado-telemetry-mvp/hackathon-data/knowledge-base/docs/`
+  - Embeddings: Amazon Titan Text Embeddings V2
+  - Vector store: OpenSearch Serverless (auto-created)
+  - 5 documentos indexados: 3 manuales + catálogo SPN + catálogo fallas
+- [ ] Verificar respuestas del RAG con preguntas de prueba
 
 #### 2.2 Agente Combustible (AgentCore — C-005)
 - [ ] Crear agente `ado-agente-combustible` en AgentCore
