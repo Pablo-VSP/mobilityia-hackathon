@@ -1,0 +1,261 @@
+[{
+  "codigo": "255",
+  "descripcion": "Reserved",
+  "NUM": "2",
+  "severidad_inferencia": null
+}, {
+  "codigo": "255",
+  "descripcion": "Extension",
+  "NUM": "2",
+  "severidad_inferencia": null
+}, {
+  "codigo": "177",
+  "descripcion": "Transmission #1 oil temperature",
+  "NUM": "3",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Aftertreatment #1 supply air pressure",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Tachometer signal output",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Trailer #3 brake stroke axle 2 right",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Pressure control valve #1",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Switch for maximum temporary permissible pressure",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Aux output #2",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Fan override indicator lamp output",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Trailer brake slack out of adjustment forward axle left",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Retarder response system pressure indicator",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Transmission range position",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "31",
+  "descripcion": "Tire pressure sensor - #14",
+  "NUM": "57",
+  "severidad_inferencia": null
+}, {
+  "codigo": "84",
+  "descripcion": "Brake torque output axle 2 left",
+  "NUM": "77",
+  "severidad_inferencia": null
+}, {
+  "codigo": "84",
+  "descripcion": "Road speed",
+  "NUM": "77",
+  "severidad_inferencia": null
+}, {
+  "codigo": "84",
+  "descripcion": "Timing actuator #2",
+  "NUM": "77",
+  "severidad_inferencia": null
+}, {
+  "codigo": "111",
+  "descripcion": "Engine cylinder #22 knock sensor",
+  "NUM": "85",
+  "severidad_inferencia": null
+}, {
+  "codigo": "111",
+  "descripcion": "Nivel de refrigerante",
+  "NUM": "85",
+  "severidad_inferencia": 2
+}, {
+  "codigo": "0",
+  "descripcion": "Request parameter",
+  "NUM": "224",
+  "severidad_inferencia": null
+}, {
+  "codigo": "0",
+  "descripcion": "Reserved",
+  "NUM": "224",
+  "severidad_inferencia": null
+}, {
+  "codigo": "0",
+  "descripcion": "**Unknown Diagnostic 0",
+  "NUM": "224",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Tire pressure sensor - #15",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Turbocharger #1 wastegate drive",
+  "NUM": "1774",
+  "severidad_inferencia": 2
+}, {
+  "codigo": "32",
+  "descripcion": "Aftertreatment #1 purge air pressure",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Pressure control valve #2",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Low air pressure indicator relay output",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Differential lock clutch pressure indicator",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Trailer brake slack out of adjustment forward axle right",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Trailer #3 brake stroke axle 3 left",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Transmission splitter position",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Aux output #3",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "32",
+  "descripcion": "Speed signal input",
+  "NUM": "1774",
+  "severidad_inferencia": null
+}, {
+  "codigo": "131",
+  "descripcion": "Exhaust back pressure",
+  "NUM": "2727",
+  "severidad_inferencia": 2
+}, {
+  "codigo": "131",
+  "descripcion": "Cylinder #3 exhaust gas port temperature",
+  "NUM": "2727",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Headlamp low beam left #2 output",
+  "NUM": "11929",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Aftertreatment #2 air pressure control actuator",
+  "NUM": "11929",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Splitter direct actuator",
+  "NUM": "11929",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Tractor brake slack out of adjustment axle 2 left",
+  "NUM": "11929",
+  "severidad_inferencia": 2
+}, {
+  "codigo": "37",
+  "descripcion": "Electronic drive unit power relay",
+  "NUM": "11929",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Transmission tank air pressure",
+  "NUM": "11929",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Tire temperature sensor - #4",
+  "NUM": "11929",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Trailer brake stroke axle 1 left",
+  "NUM": "11929",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Wheel chair lift inhibit",
+  "NUM": "11929",
+  "severidad_inferencia": null
+}, {
+  "codigo": "37",
+  "descripcion": "Diagnostic output",
+  "NUM": "11929",
+  "severidad_inferencia": 1
+}, {
+  "codigo": "86",
+  "descripcion": "Engine oil replacement valve",
+  "NUM": "14024",
+  "severidad_inferencia": 2
+}, {
+  "codigo": "86",
+  "descripcion": "Brake torque output axle 3 left",
+  "NUM": "14024",
+  "severidad_inferencia": 3
+}, {
+  "codigo": "86",
+  "descripcion": "Cruise control set speed",
+  "NUM": "14024",
+  "severidad_inferencia": 1
+}, {
+  "codigo": "158",
+  "descripcion": "Battery potential (voltage)-switched",
+  "NUM": "14242",
+  "severidad_inferencia": 3
+}, {
+  "codigo": "100",
+  "descripcion": "Engine cylinder #11 knock sensor",
+  "NUM": "116188",
+  "severidad_inferencia": 3
+}, {
+  "codigo": "100",
+  "descripcion": "Engine oil pressure",
+  "NUM": "116188",
+  "severidad_inferencia": 3
+}, {
+  "codigo": "100",
+  "descripcion": "Brake light relay",
+  "NUM": "116188",
+  "severidad_inferencia": 2
+}]
