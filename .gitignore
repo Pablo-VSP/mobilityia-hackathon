@@ -33,3 +33,6 @@ logs/
 # Temp
 *.tmp
 *.bak
+
+
+mcp.json
