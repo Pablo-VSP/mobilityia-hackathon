@@ -47,7 +47,7 @@ inclusion: manual
 ```
 Datos simulados → S3 → Lambda Simulador → DynamoDB
                                               ↓
-                          Amazon Bedrock AgentCore
+                          Amazon Bedrock AgentCore (C-005)
                      ┌──────────────────────────────┐
                      │  Agente Combustible           │
                      │  Agente Mantenimiento         │
@@ -57,8 +57,9 @@ Datos simulados → S3 → Lambda Simulador → DynamoDB
 ```
 
 ### Puntos clave
-- Construido sobre **Amazon Bedrock AgentCore** — orquestación nativa de agentes autónomos
-- Datos simulados que replican fielmente la operación real de ADO (seguridad corporativa)
+- Construido sobre **Amazon Bedrock AgentCore** — orquestación nativa de agentes autónomos (C-005)
+- Datos simulados que replican fielmente la operación real de ADO (seguridad corporativa — C-004)
+- Telemetría basada en 36 SPNs reales del catálogo motor_spn (C-006)
 - Respuestas en español, en lenguaje operativo — no reportes técnicos
 - Integración sobre infraestructura existente — sin reemplazar hardware
 
@@ -161,7 +162,7 @@ Analiza el Bus SIM-089 y genera una recomendación si es necesario.
 > "En producción, Lambda se reemplaza por AWS IoT Core + Kinesis para ingesta real desde los GPS de los buses. Bedrock AgentCore escala horizontalmente. El MVP demuestra la lógica de negocio — la infraestructura de producción es un paso de configuración, no de rediseño."
 
 **"¿Por qué Amazon Bedrock y no otra plataforma?"**
-> "Bedrock AgentCore es la única plataforma que ofrece orquestación nativa de agentes autónomos con memoria, herramientas y RAG integrados en un solo servicio managed. Para un caso de uso que requiere múltiples agentes coordinados con acceso a datos en tiempo real, es la opción más directa y escalable."
+> "Amazon Bedrock AgentCore es la plataforma de orquestación nativa de agentes autónomos con memoria, herramientas y RAG integrados en un solo servicio managed. Para un caso de uso que requiere múltiples agentes coordinados con acceso a datos en tiempo real, es la opción más directa y escalable."
 
 **"¿Cómo manejan la resistencia de los conductores al monitoreo?"**
 > "El sistema está diseñado explícitamente para esto. Los agentes generan recomendaciones de desarrollo profesional, no reportes punitivos. Eso está codificado en el system prompt — el conductor recibe coaching, no una sanción."
