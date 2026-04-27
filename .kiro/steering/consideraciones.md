@@ -59,10 +59,36 @@ En lugar de ello debe mencionar mejoras en lenguaje difuso tal que "Aumento", "M
 - **Impacto:**
   - En lugar de datos históricos se hablará de usar datos simulados
   - Se debe reescribir todo el flujo de planeación, archivos de steering files y redefinir el ITP-LATAM-WB-Workshop.md respecto a esta nueva consideración.
+
+
+### C-005 — Definición del concepto de agentes
+- **Fecha:** 2026-04-27
+- **Estado:** ✅ Activa
+- **Descripción:** Siempre que se hable del concepto de Agentes se debe considerar que son agentes de AgentCore, no considerar agentes de Bedrock.
+- **Impacto:**
+  - Cada que se hable de Agentes seran Agentes de AgentCore.
+  - Se debe tener en cuenta la documentación más actualizada de Agentes de AgentCore.
+  - Esto afecta a las descripciones y planeaciones realizadas hasta ahora.
+
+  ### C-006 — Actualización de steering files y planeaciones de acuerdo a modelos relacionados con layout de las tablas ubicados en la carpeta Models
+- **Fecha:** 2026-04-27
+- **Estado:** ✅ Activa
+- **Descripción:** Se deben actualizar los datos relacionados con el layout de las tablas a utilizar de acuerdo a directorio models.
+- **Impacto:**
+  - Se deben actualizar los steering files y archivos de planeacion de acuerdo a los campos de cada tabla ubicados en models.
+  - Editar el data-schema.md actualizando sus consideraciones acerca del bucket de S3 considerando las tres tablas de la carpeta models, y catalogos de manual-reglas-mantenimiento-motor.md (que esta haciendo otro compañero) y manual-combustible.md  (que esta haciendo otro compañero) pero que ambos van referidos junto con el nuevo de la consideración C-007 a ser catálogos para la knoledge base.
+
+### C-007 — Consideracion de códigos de falla a tomar en cuenta
+- **Fecha:** 2026-04-27
+- **Estado:** ✅ Activa 
+- **Descripción:** Se debe estudiar y generar un catálogo de códigos de falla por descripción de acuerdo al documento fault_data_catalog.JSON ubicado en la carpeta datos_spn con el fin de determinar cuáles son los códigos de falla importantes para ser considerados por el modelo de predicción de fallas ml que se desarrollará en SAGEMAKER
+- **Impacto:**
+  - Cambia en el proyecto el enfoque de planeación para predecir tema de las fallas relevantes, generando o modificando el JSON de fault_data_catalog asignando un campo de severidad_inferencia en el cual asignes tú un nivel de severidad de 1 como mínimo a 3 como máxima con la que clasifiques al menos 5 fallas que consideres relevantes tomando en cuenta el campo NUM que corresponde a las veces que se presenta esa falla en el total de datos históricos que se tienen para simulación del proyecto. 
+  - La idea es generar datos limpios que nos permitan entrenar un modelo de forma adecuada para el tema de mantenimiento preventivo.
 ---
 
 ## 🕐 CONSIDERACIONES PENDIENTES DE APLICAR
-*(Ninguna por el momento — C-003 y C-004 aplicadas en todos los archivos del proyecto)*
+*(Todas aplicadas — C-005, C-006 y C-007 integradas en steering files el 2026-04-27)*
 ---
 
 ## 📝 PLANTILLA PARA NUEVA CONSIDERACIÓN

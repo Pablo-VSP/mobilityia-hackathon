@@ -2,207 +2,149 @@
 inclusion: always
 ---
 
-# 📅 Plan de 5 Días — ADO MobilityIA
-## Hackathon AWS Builders League 2026 — Aplicando C-001, C-002, C-003 y C-004
+# 📅 Plan de Ejecución — ADO MobilityIA
+## Hackathon AWS Builders League 2026 — DÍA FINAL
 
-> Cada día tiene entregables concretos y demostrables.
-> Los datos son **simulados** (C-004). No se mencionan métricas numéricas específicas (C-003).
-
----
-
-## Resumen del plan
-
-| Día | Foco | Entregable clave |
-|---|---|---|
-| **Día 1** | Generación de datos simulados + infraestructura base | S3 poblado con datos simulados, DynamoDB creado, Lambda simulador funcionando |
-| **Día 2** | Knowledge Base + Agente Combustible | Agente 1 respondiendo en español con datos simulados |
-| **Día 3** | Modelo predictivo + Agente Mantenimiento | Agente 2 generando recomendaciones preventivas |
-| **Día 4** | Dashboard + integración end-to-end | Demo completa funcionando de punta a punta |
-| **Día 5** | Pulido, ensayo y presentación | Demo estable, pitch listo, backup preparado |
+> **Contexto:** Estamos en el último día de desarrollo. Las Lambdas están 100% codificadas.
+> Falta desplegar infraestructura AWS, conectar agentes de AgentCore y preparar la demo.
+> Los datos son **simulados** (C-004). Sin métricas numéricas específicas (C-003).
+> Los agentes son de **AgentCore** (C-005). Esquemas alineados con `models/` (C-006).
 
 ---
 
-## DÍA 1 — Datos Simulados + Infraestructura Base
+## Estado actual del proyecto
 
-### Objetivo
-Tener el pipeline de datos funcionando con datos simulados: Script → S3 → Lambda → DynamoDB.
+### ✅ Completado
+- 9 funciones Lambda codificadas y listas para deploy
+- Shared layer `ado-common` con catálogo SPN, pivoteo, utilidades
+- Catálogo de 36 SPNs confirmados con rangos y umbrales
+- Catálogo de fallas con `severidad_inferencia` clasificada (C-007)
+- Documentación completa: steering files, prompts de agentes, esquemas de datos
+- Plan de modelo predictivo SageMaker con fallback heurístico
 
-### Tareas
-
-#### 1.1 Setup de cuenta AWS
-- [ ] Confirmar permisos IAM habilitados por admins de Mobility ADO
-- [ ] Crear roles IAM necesarios (Lambda execution role, Bedrock access role)
-- [ ] Verificar acceso a Amazon Bedrock y modelos Claude en `us-east-1`
-
-#### 1.2 Generación de datos simulados (C-004)
-- [ ] Crear script Python `generate_simulated_data.py`:
-  - Genera telemetría sintética para 20 buses ficticios (BUS-SIM-001 a BUS-SIM-020)
-  - Genera historial de eventos mecánicos simulados (mínimo 500 registros)
-  - Incluye variabilidad realista: rutas, conductores, condiciones de carretera
-  - **No usa datos reales de ADO** — datos 100% sintéticos
-- [ ] Crear bucket S3: `s3://ado-mobilityia-mvp/`
-- [ ] Subir datos simulados con estructura:
-  ```
-  s3://ado-mobilityia-mvp/
-  ├── telemetria-simulada/YYYY-MM/bus_id/
-  ├── fallas-simuladas/
-  └── knowledge-base/docs/
-  ```
-- [ ] Validar que los datos tienen los campos requeridos (ver `data-schema.md`)
-
-#### 1.3 DynamoDB
-- [ ] Crear tabla `ado-telemetria-live`
-  - PK: `bus_id` (String) | SK: `timestamp` (String ISO 8601)
-  - TTL: `ttl_expiry` (24 horas)
-  - GSI: `ruta_id-timestamp-index`
-- [ ] Crear tabla `ado-alertas`
-  - PK: `alerta_id` (String UUID) | SK: `timestamp`
-
-#### 1.4 Lambda Simulador (C-002)
-- [ ] Crear función Lambda `ado-simulador-telemetria`
-- [ ] Lógica: lee registros simulados de S3, escribe en DynamoDB con timestamp = now()
-- [ ] Simular 10–20 buses en paralelo
-- [ ] Probar disparo manual y verificar escritura en DynamoDB
-- [ ] Configurar EventBridge Scheduler: disparo cada 10 segundos
-
-### Criterio de éxito del Día 1
-> DynamoDB muestra registros de buses simulados actualizándose en tiempo real.
+### ❌ Pendiente de desplegar
+- Infraestructura AWS (S3, DynamoDB, Lambda, IAM)
+- Datos simulados en S3
+- Agentes de AgentCore con tools conectados
+- Knowledge Base en Bedrock
+- SageMaker endpoint (o confirmar fallback heurístico)
+- Dashboard (QuickSight o Streamlit)
 
 ---
 
-## DÍA 2 — Knowledge Base + Agente Combustible
+## Plan del día — Bloques de trabajo
 
-### Objetivo
-Agente 1 funcionando: recibe bus_id, consulta DynamoDB, detecta desviación, responde en español con lenguaje difuso (C-003).
+### BLOQUE 1 — Infraestructura base (2-3 horas)
+> **Objetivo:** S3 + DynamoDB + Lambda simulador funcionando.
 
-### Tareas
+#### 1.1 Infraestructura con CDK/CloudFormation + CLI
+- [ ] Crear bucket S3: `ado-mobilityia-mvp` con estructura de carpetas
+- [ ] Crear tabla DynamoDB `ado-telemetria-live`
+  - PK: `autobus` (S) | SK: `timestamp` (S)
+  - TTL: `ttl_expiry`
+  - GSI: `viaje_ruta-timestamp-index`
+- [ ] Crear tabla DynamoDB `ado-alertas`
+  - PK: `alerta_id` (S) | SK: `timestamp` (S)
+- [ ] Crear roles IAM (Lambda execution, Bedrock access, SageMaker)
 
-#### 2.1 Knowledge Base en Bedrock
-- [ ] Subir documentos a `s3://ado-mobilityia-mvp/knowledge-base/docs/`:
-  - Umbrales de consumo por ruta (CSV — valores de referencia simulados)
-  - Normas básicas de conducción eficiente
-  - Glosario de códigos OBD relevantes
-- [ ] Crear Knowledge Base en Amazon Bedrock
-  - Data source: S3 bucket
+#### 1.2 Datos simulados en S3
+- [ ] Subir catálogo SPN (`motor_spn.json`) a `catalogo/`
+- [ ] Generar y subir telemetría simulada (Parquet) a `telemetria-simulada/`
+- [ ] Subir fallas simuladas (Parquet) a `fallas-simuladas/`
+- [ ] Subir documentos de Knowledge Base a `knowledge-base/docs/`
+
+#### 1.3 Deploy de Lambdas
+- [ ] Crear Lambda layer `ado-common-layer` con el shared code
+- [ ] Deploy `ado-simulador-telemetria` con EventBridge Scheduler (rate 10s)
+- [ ] Deploy las 7 Lambdas de tools (3 combustible + 4 mantenimiento)
+- [ ] Deploy `ado-dashboard-api`
+- [ ] Probar simulador: verificar escritura en DynamoDB
+
+### BLOQUE 2 — Agentes de AgentCore (2-3 horas)
+> **Objetivo:** Ambos agentes respondiendo en español con datos simulados.
+
+#### 2.1 Knowledge Base
+- [ ] Crear Knowledge Base en Bedrock
+  - Data source: `s3://ado-mobilityia-mvp/knowledge-base/docs/`
   - Embeddings: Amazon Titan Text Embeddings v2
 - [ ] Sincronizar y verificar indexación
 
-#### 2.2 Tools del Agente Combustible (Lambda functions)
-- [ ] `tool-consultar-telemetria` — últimos N registros de DynamoDB por bus_id
-- [ ] `tool-calcular-desviacion` — % desviación vs. umbral histórico simulado
-- [ ] `tool-listar-buses-activos` — buses con telemetría en los últimos 5 minutos
-
-#### 2.3 Agente Combustible en Bedrock AgentCore
-- [ ] Crear agente `ado-agente-combustible`
-- [ ] System prompt en español con instrucción explícita de **no usar valores numéricos específicos** (C-003)
-- [ ] Asociar Knowledge Base y Action Group
+#### 2.2 Agente Combustible (AgentCore — C-005)
+- [ ] Crear agente `ado-agente-combustible` en AgentCore
+- [ ] Configurar system prompt (ver `agentes-prompts.md`)
+- [ ] Asociar Action Group con 3 Lambdas tools
+- [ ] Asociar Knowledge Base
 - [ ] Modelo: Claude 3.5 Sonnet
-- [ ] Probar con preguntas de demo (ver `agentes-prompts.md`)
+- [ ] Probar con preguntas de demo
 
-### Criterio de éxito del Día 2
-> El Agente Combustible responde en español con datos simulados, identifica desviaciones y genera recomendaciones usando lenguaje difuso (sin porcentajes ni valores MXN específicos).
+#### 2.3 Agente Mantenimiento (AgentCore — C-005)
+- [ ] Crear agente `ado-agente-mantenimiento` en AgentCore
+- [ ] Configurar system prompt (ver `agentes-prompts.md`)
+- [ ] Asociar Action Group con 4 Lambdas tools
+- [ ] Asociar Knowledge Base
+- [ ] Probar con preguntas de demo
 
----
+### BLOQUE 3 — SageMaker (1-2 horas, o confirmar fallback)
+> **Decisión:** Si no hay tiempo, el fallback heurístico en Lambda es suficiente para la demo.
 
-## DÍA 3 — Modelo Predictivo + Agente Mantenimiento
+- [ ] Opción A: Entrenar XGBoost rápido en SageMaker Studio
+- [ ] Opción B: Confirmar que el fallback heurístico funciona correctamente
+- [ ] Probar `tool-predecir-evento` end-to-end
 
-### Objetivo
-Agente 2 funcionando: analiza señales OBD simuladas, predice eventos, genera recomendaciones preventivas.
+### BLOQUE 4 — Dashboard + Demo (2 horas)
+> **Objetivo:** Demo completa funcionando de punta a punta.
 
-### Tareas
+#### 4.1 Dashboard
+- [ ] Opción A: QuickSight conectado a DynamoDB (via Athena)
+- [ ] Opción B: Streamlit app usando `ado-dashboard-api`
+- [ ] Visualizaciones: estado de flota, alertas activas, eficiencia, CO₂
 
-#### 3.1 Modelo predictivo en SageMaker (entrenado con datos simulados — C-004)
-- [ ] Opción A: Entrenar XGBoost/Random Forest con dataset simulado de fallas
-  - Features: temperatura_motor, presión_aceite, codigo_obd, km_desde_ultimo_mant, rpm_promedio
-  - Target: evento_en_proximos_14_dias (binario)
-- [ ] Opción B (fallback): Reglas heurísticas en Lambda
-- [ ] Desplegar como SageMaker endpoint: `ado-prediccion-eventos`
-- [ ] Probar endpoint con datos simulados de ejemplo
+#### 4.2 Datos "trampa" para la demo
+- [ ] Pre-cargar buses con señales anómalas en DynamoDB:
+  - Bus A: Temperatura motor elevada + presión aceite baja → CRITICO
+  - Bus B: Balatas con desgaste avanzado → ELEVADO
+  - Bus C: Voltaje batería bajo + nivel urea bajo → MODERADO
+  - Bus D: Todas las señales normales → BAJO
 
-#### 3.2 Tools del Agente Mantenimiento (Lambda functions)
-- [ ] `tool-consultar-obd` — señales OBD actuales de DynamoDB
-- [ ] `tool-predecir-evento` — llama al endpoint SageMaker
-- [ ] `tool-buscar-patrones-historicos` — consulta S3 con eventos similares
-- [ ] `tool-generar-recomendacion` — crea registro en `ado-alertas`
-
-#### 3.3 Agente Mantenimiento en Bedrock AgentCore
-- [ ] Crear agente `ado-agente-mantenimiento`
-- [ ] System prompt con instrucción de **lenguaje difuso** (C-003): "alta probabilidad", "patrón consistente con", "se recomienda revisión"
-- [ ] Asociar Knowledge Base y Action Group
-- [ ] Probar con preguntas de demo (ver `agentes-prompts.md`)
-
-### Criterio de éxito del Día 3
-> El Agente Mantenimiento identifica buses simulados en riesgo y genera recomendaciones preventivas sin mencionar probabilidades numéricas específicas.
-
----
-
-## DÍA 4 — Dashboard + Integración End-to-End
-
-### Objetivo
-Demo completa funcionando: simulador → agentes → dashboard visible para el jurado.
-
-### Tareas
-
-#### 4.1 Dashboard en QuickSight
-- [ ] Conectar QuickSight a DynamoDB (via Athena + S3)
-- [ ] Crear visualizaciones:
-  - Estado de flota simulada (verde/amarillo/rojo)
-  - Buses con mayor desviación de consumo
-  - Recomendaciones de mantenimiento activas
-  - Estimación de mejora en eficiencia (lenguaje difuso — C-003)
-  - Métricas estimadas de reducción de CO₂
-- [ ] Alternativa: Streamlit app si QuickSight es complejo
-
-#### 4.2 Integración end-to-end
-- [ ] Flujo completo: Lambda simulador → DynamoDB → Agente responde → Dashboard
-- [ ] Probar escenario de demo completo (ver `guion-demo.md`)
-- [ ] Corregir puntos de falla
-
-#### 4.3 Script de demo
-- [ ] Preparar 3–5 preguntas de alto impacto para los agentes
-- [ ] Pre-cargar datos simulados "trampa" para garantizar alertas durante la demo
-- [ ] Documentar comandos exactos para la presentación
-
-### Criterio de éxito del Día 4
-> Demo completa de principio a fin sin errores en menos de 5 minutos.
+#### 4.3 Ensayo de demo
+- [ ] Probar flujo completo: simulador → DynamoDB → agentes → dashboard
+- [ ] Preparar 3-5 preguntas de alto impacto
+- [ ] Preparar backup (screenshots/video) por si hay problemas
 
 ---
 
-## DÍA 5 — Pulido, Ensayo y Presentación
+## Herramientas disponibles para el deploy
 
-### Objetivo
-Demo estable, pitch afinado, equipo coordinado.
+Contamos con MCPs de AWS que nos permiten:
+- **AWS CLI** (`call_aws`) — Crear recursos directamente desde aquí
+- **AWS Documentation** — Consultar docs actualizadas de AgentCore, Bedrock, etc.
+- **AWS Pricing** — Verificar costos de los servicios
+- **AWS Regional Availability** — Verificar disponibilidad de servicios en us-east-1
 
-### Tareas
-
-#### 5.1 Estabilización
-- [ ] Corregir bugs del Día 4
-- [ ] Pre-cargar datos simulados en DynamoDB como respaldo
-- [ ] Preparar modo offline (screenshots/video) por si hay problemas de conectividad
-
-#### 5.2 Presentación
-- [ ] Slides: problema → solución → arquitectura → demo en vivo → impacto estimado
-- [ ] Ensayar pitch completo (máximo 10 minutos + demo)
-- [ ] Preparar respuestas a preguntas del jurado (ver `guion-demo.md`)
-
-#### 5.3 Checklist pre-presentación
-- [ ] Cuenta AWS activa con créditos suficientes
-- [ ] Todos los servicios desplegados y funcionando
-- [ ] Lambda simulador probado con datos simulados
-- [ ] Ambos agentes respondiendo con lenguaje difuso (C-003)
-- [ ] Dashboard cargando sin errores
-- [ ] Backup de screenshots/video listo
+### Estrategia de deploy recomendada
+1. **CDK/CloudFormation** para infraestructura reproducible (S3, DynamoDB, IAM, Lambda)
+2. **AWS CLI** para configuraciones rápidas y verificaciones
+3. **Consola AWS** para Bedrock AgentCore (configuración visual de agentes)
 
 ---
 
-## Riesgos y mitigaciones
+## Criterio de éxito del día
 
-| Riesgo | Probabilidad | Mitigación |
-|---|---|---|
-| Bedrock AgentCore no disponible en la región | Media | Fallback con Bedrock Agents clásico |
-| SageMaker endpoint tarda en entrenar | Alta | Reglas heurísticas en Lambda como fallback |
-| Datos simulados no tienen variabilidad suficiente | Media | Ajustar parámetros del script generador |
-| QuickSight no conecta con DynamoDB fácilmente | Alta | Usar Streamlit como alternativa |
-| Permisos IAM bloqueados por admins | Alta | Solicitar permisos el Día 0 |
-| Agente usa valores numéricos específicos (viola C-003) | Media | Revisar system prompt y agregar instrucción explícita |
-| Conectividad durante la demo | Baja | Screenshots y video de respaldo |
+> Demo completa de principio a fin:
+> 1. Lambda simulador inyectando datos en DynamoDB ✓
+> 2. Agente Combustible respondiendo en español con lenguaje difuso ✓
+> 3. Agente Mantenimiento generando recomendaciones preventivas ✓
+> 4. Dashboard mostrando estado de flota y alertas ✓
+> 5. Todo funcionando sin errores en menos de 5 minutos ✓
+
+---
+
+## Riesgos y mitigaciones (día final)
+
+| Riesgo | Mitigación |
+|---|---|
+| AgentCore no disponible en us-east-1 | Verificar disponibilidad regional primero |
+| SageMaker tarda en entrenar | Usar fallback heurístico (ya implementado) |
+| Permisos IAM bloqueados | Solicitar permisos inmediatamente |
+| QuickSight complejo de configurar | Usar Streamlit como alternativa rápida |
+| Agente usa valores numéricos (viola C-003) | System prompt tiene instrucción explícita |
