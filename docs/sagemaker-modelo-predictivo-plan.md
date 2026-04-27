@@ -20,14 +20,28 @@ basándose en señales de telemetría (SPNs) y el historial de fallas.
 
 Solo estas fallas son las que el modelo debe predecir:
 
-| Código | Descripción | NUM (ocurrencias) | Justificación |
-|---|---|---|---|
-| `100` | Engine oil pressure | 116,188 | Presión de aceite baja → daño catastrófico al motor |
-| `100` | Engine cylinder #11 knock sensor | 116,188 | Detonación en cilindro → daño interno inminente |
-| `158` | Battery potential (voltage)-switched | 14,242 | Falla eléctrica → afecta todos los sistemas |
-| `86` | Brake torque output axle 3 left | 14,024 | Falla de frenos → riesgo de seguridad crítico |
+| Código | Descripción | NUM (ocurrencias) | Justificación | Señales predictivas clave |
+|---|---|---|---|---|
+| `100` | Engine oil pressure | 116,188 | Presión de aceite baja → daño catastrófico al motor | SPN 100 ↓, SPN 98 ↓, SPN 175 ↑, SPN 247 acumulado |
+| `100` | Engine cylinder knock sensor | 116,188 | Detonación en cilindro → daño interno inminente | SPN 110 ↑, SPN 190 ↑, SPN 91 picos, SPN 175 ↑ |
+| `158` | Battery potential (voltage)-switched | 14,242 | Falla eléctrica → afecta todos los sistemas | SPN 168 ↓ progresivo, SPN 247 acumulado alto |
+| `86` | Brake torque output axle 3 left | 14,024 | Falla de frenos → riesgo de seguridad crítico | SPN 1099-1104 ↓, SPN 521 uso excesivo, SPN 84 alta |
 
 > **Nota:** El código `100` tiene 116,188 ocurrencias — es la falla dominante. Esto genera un dataset con buena representación de la clase positiva.
+
+### Fallas de severidad 2 como señales de escalamiento
+
+Las fallas con `severidad_inferencia = 2` no son target del modelo, pero su presencia reciente es una **feature de alto valor predictivo** porque pueden escalar a severidad 3:
+
+| Código | Descripción | Escala a... |
+|---|---|---|
+| `111` | Nivel de refrigerante | Sobrecalentamiento motor → código 100 |
+| `32` | Turbocharger wastegate drive | Daño a motor por sobrealimentación → código 100 |
+| `131` | Exhaust back pressure | Daño a turbo + incumplimiento NOM-044 |
+| `37` | Brake slack out of adjustment | Falla de frenos → código 86 |
+| `86` | Engine oil replacement valve | Pérdida de presión de aceite → código 100 |
+
+> **Regla de negocio (del manual de fallas):** Si una falla de severidad 2 se presenta >3 veces en 30 días, su severidad efectiva sube a 3.
 
 ---
 
@@ -121,10 +135,13 @@ Para cada uno de los **19 SPNs de mantenimiento**, calcular sobre ventana de 7 d
 |---|---|
 | `fallas_criticas_30d` | Conteo de fallas con código en {100, 158, 86} en últimos 30 días |
 | `fallas_criticas_90d` | Conteo de fallas críticas en últimos 90 días |
+| `fallas_sev2_30d` | Conteo de fallas con severidad_inferencia=2 en últimos 30 días (señal de escalamiento) |
+| `fallas_sev2_recurrentes_30d` | 1 si alguna falla sev2 se repite >3 veces en 30 días (regla de escalamiento) |
 | `severidad_max_30d` | Severidad máxima de fallas en últimos 30 días |
 | `dias_desde_ultima_falla_critica` | Días desde la última falla con código crítico |
 | `tiene_falla_activa` | 1 si hay falla con código crítico activo, 0 si no |
 | `codigos_criticos_unicos_90d` | Cantidad de códigos críticos distintos en 90 días |
+| `fallas_correlacionadas` | 1 si hay combinación de fallas que indica problema sistémico (ver manual de fallas) |
 
 ### 3.5 Features Contextuales
 
@@ -233,11 +250,52 @@ RISK_DESCRIPTIONS = {
     "CRITICO": "Múltiples señales de alerta asociadas a fallas de motor/frenos/eléctrico. Intervención inmediata.",
 }
 
-# Mapeo componente por código de falla
+# Mapeo componente por código de falla (del manual de fallas)
 COMPONENTES_POR_CODIGO = {
-    '100': ['circuito_aceite_motor', 'bomba_aceite', 'filtro_aceite', 'sensor_presion'],
-    '158': ['bateria', 'alternador', 'sistema_electrico', 'cableado'],
-    '86': ['sistema_frenos', 'balatas', 'discos_freno', 'circuito_hidraulico'],
+    '100': ['circuito_aceite_motor', 'bomba_aceite', 'filtro_aceite', 'sensor_presion', 'inyectores'],
+    '158': ['bateria', 'alternador', 'sistema_electrico', 'cableado', 'fusibles'],
+    '86': ['sistema_frenos', 'balatas', 'discos_freno', 'circuito_hidraulico', 'slack_adjuster'],
+}
+
+# Reglas de escalamiento por acumulación (del manual de fallas)
+# - 3+ fallas de severidad baja simultáneas → tratar como severidad media
+# - 2+ fallas de severidad media simultáneas → tratar como severidad alta
+# - Cualquier combinación con 1 falla de severidad alta → intervención inmediata
+
+# Correlaciones de fallas que indican problemas sistémicos (del manual de fallas)
+CORRELACIONES_CRITICAS = {
+    'lubricacion': {'spns': [100, 175, 110], 'diagnostico': 'Falla inminente del sistema de lubricación'},
+    'refrigeracion': {'spns': [111, 110], 'diagnostico': 'Fuga de refrigerante con sobrecalentamiento'},
+    'electrico': {'spns': [168], 'diagnostico': 'Falla del sistema de carga'},
+    'postratamiento': {'spns': [131, 1761], 'diagnostico': 'Sistema de postratamiento degradado — riesgo NOM-044'},
+    'frenos': {'spns': [1099, 1100, 1101, 1102, 1103, 1104], 'diagnostico': 'Desgaste generalizado del sistema de frenos'},
+}
+```
+
+---
+
+## 6. Umbrales del manual de mantenimiento para el fallback heurístico
+
+Estos umbrales provienen del `manual-reglas-mantenimiento-motor.md` y se usan en el fallback:
+
+```python
+UMBRALES_CRITICOS = {
+    # 🔴 PARO INMEDIATO
+    110: {'max': 140, 'desc': 'Temperatura Motor ≥ 140°C'},
+    175: {'max': 145, 'desc': 'Temperatura Aceite ≥ 145°C'},
+    100: {'min': 50, 'desc': 'Presión Aceite ≤ 50 kPa'},
+    168: {'min': 10, 'max': 16.5, 'desc': 'Voltaje Batería ≤ 10V o ≥ 16.5V'},
+    # Balatas ≤ 5% → cualquiera de 1099-1104
+}
+
+UMBRALES_ELEVADOS = {
+    # 🟠 INTERVENCIÓN ESTA SEMANA
+    110: {'range': (120, 140), 'desc': 'Temperatura Motor 120-140°C sostenido'},
+    100: {'range': (50, 150), 'desc': 'Presión Aceite 50-150 kPa'},
+    98: {'max': 15, 'desc': 'Nivel aceite ≤ 15%'},
+    111: {'max': 20, 'desc': 'Anticongelante ≤ 20%'},
+    190: {'max': 2800, 'desc': 'RPM ≥ 2800 sostenido'},
+    # Balatas ≤ 20% → cualquiera de 1099-1104
 }
 ```
 
@@ -294,8 +352,43 @@ Política adicional:
 - [x] Catálogo SPN en S3 (1 archivo)
 - [x] Fallas clasificadas con severidad_inferencia (C-007)
 - [x] Fallback heurístico implementado en Lambda
+- [x] Manuales de Knowledge Base listos (3 manuales)
 - [ ] Crear SageMaker Studio domain en us-east-2
 - [ ] Ejecutar feature engineering notebook
 - [ ] Entrenar XGBoost
 - [ ] Desplegar endpoint
 - [ ] Probar integración con Lambda
+
+---
+
+## 10. Integración con Knowledge Base y Manuales
+
+Los tres manuales del equipo alimentan tanto al modelo predictivo como al RAG de los agentes de AgentCore:
+
+### Manuales disponibles (carpeta `manuales/`)
+
+| Manual | Aporta al modelo | Aporta al RAG | Destino en S3 |
+|---|---|---|---|
+| `manual-reglas-mantenimiento-motor.md` | Umbrales de alerta por SPN (CRITICO/ELEVADO/MODERADO/BAJO), intervalos de mantenimiento programado, matriz de correlación de parámetros | Reglas que el agente de mantenimiento consulta para generar recomendaciones contextualizadas | `knowledge-base/docs/` |
+| `manual-reglas-ambientales-emisiones.md` | Factor de emisión CO₂ (2.68 kg/L), clasificación ambiental por rendimiento, umbrales de eficiencia por ruta | Reglas que el agente de combustible consulta para evaluar impacto ambiental y cumplimiento NOM-044 | `knowledge-base/docs/` |
+| `manual-reglas-fallas-mantenimiento.md` | Señales predictivas clave por falla, reglas de escalamiento por acumulación/recurrencia, correlaciones de fallas | Reglas de negocio para priorización de intervenciones, formato de OT, matriz de decisión rápida | `knowledge-base/docs/` |
+
+### Información clave extraída de los manuales para el modelo
+
+**Del manual de mantenimiento motor:**
+- Umbrales exactos de PARO INMEDIATO: Temp Motor ≥140°C, Temp Aceite ≥145°C, Presión Aceite ≤50 kPa, Voltaje ≤10V, Balatas ≤5%
+- Umbrales de INTERVENCIÓN URGENTE: Temp Motor 120-140°C, Presión Aceite 50-150 kPa, Nivel aceite ≤15%, RPM ≥2800
+- Regla: alertas preventivas se activan por tendencia (≥3 lecturas consecutivas), no por lecturas aisladas
+- Regla: alertas correctivas de paro se activan con 1 sola lectura confirmada
+
+**Del manual de emisiones:**
+- Rendimiento de referencia: 3.7 km/L (ruta CDMX-Acapulco como línea pivote)
+- Factor CO₂: 2.68 kg CO₂ por litro de diésel
+- Urea <15% = incumplimiento NOM-044-SEMARNAT-2017
+- RPM óptimas en crucero: 1200-1600 rpm
+
+**Del manual de fallas:**
+- Regla de escalamiento: falla sev2 que se repite >3 veces en 30 días → sube a sev3
+- Regla de acumulación: 2+ fallas sev2 simultáneas → tratar como sev3
+- Correlaciones críticas: presión aceite + temp aceite + temp motor = falla inminente de lubricación
+- Priorización de taller: sev3 primero → frenos → motor → eléctrico → emisiones

@@ -48,10 +48,15 @@ inclusion: always
 - [ ] Crear roles IAM (Lambda execution, Bedrock access, SageMaker)
 
 #### 1.2 Datos simulados en S3
-- [ ] Subir catálogo SPN (`motor_spn.json`) a `catalogo/`
-- [ ] Generar y subir telemetría simulada (Parquet) a `telemetria-simulada/`
-- [ ] Subir fallas simuladas (Parquet) a `fallas-simuladas/`
-- [ ] Subir documentos de Knowledge Base a `knowledge-base/docs/`
+- [x] Datos de telemetría ya en S3 (1,339 archivos Parquet, ~447 MB)
+- [x] Datos de fallas ya en S3 (123 archivos Parquet, ~6.5 MB)
+- [x] Catálogo SPN ya en S3 (1 archivo Parquet)
+- [ ] Subir catálogo SPN en JSON (`motor_spn.json`) a `catalogo/`
+- [ ] Subir 3 manuales de Knowledge Base a `knowledge-base/docs/`:
+  - `manual-reglas-mantenimiento-motor.md` ✅ (en carpeta `manuales/`)
+  - `manual-reglas-ambientales-emisiones.md` ✅ (en carpeta `manuales/`)
+  - `manual-reglas-fallas-mantenimiento.md` ✅ (en carpeta `manuales/`)
+- [ ] Subir `codigos-falla-catalogo.csv` (generado desde `fault_data_catalog.JSON`)
 
 #### 1.3 Deploy de Lambdas
 - [ ] Crear Lambda layer `ado-common-layer` con el shared code

@@ -305,13 +305,14 @@ REGLAS CRÍTICAS:
 
 ## Knowledge Base — Documentos para RAG (AgentCore)
 
-Cargar en `s3://ado-mobilityia-mvp/knowledge-base/docs/`:
+Cargar en `s3://ado-telemetry-mvp/hackathon-data/knowledge-base/docs/`:
 
 | Documento | Contenido | Formato | Estado |
 |---|---|---|---|
 | `motor_spn.json` | Catálogo SPN con 36 variables, rangos y umbrales | JSON | Listo |
 | `codigos-falla-catalogo.csv` | Catálogo de fallas con severidad_inferencia (C-007) | CSV | Listo |
-| `manual-reglas-mantenimiento-motor.md` | Reglas de mantenimiento por componente | MD | Compañero de equipo |
-| `manual-combustible.md` | Guía de eficiencia de combustible por ruta | MD | Compañero de equipo |
-| `normas-conduccion-eficiente.pdf` | Estándares de conducción eficiente | PDF | Por crear |
-| `nom-044-resumen.pdf` | Resumen de límites de emisiones NOM-044-SEMARNAT | PDF | Por crear |
+| `manual-reglas-mantenimiento-motor.md` | Umbrales de alerta por SPN, intervalos de mantenimiento programado/preventivo/correctivo, matriz de correlación de parámetros | MD | ✅ Listo (carpeta `manuales/`) |
+| `manual-reglas-ambientales-emisiones.md` | Factor CO₂ (2.68 kg/L), clasificación ambiental, cumplimiento NOM-044, umbrales de eficiencia, ruta pivote CDMX-Acapulco | MD | ✅ Listo (carpeta `manuales/`) |
+| `manual-reglas-fallas-mantenimiento.md` | Reglas correctivas/preventivas por falla con severidad_inferencia, señales predictivas, reglas de escalamiento, correlaciones de fallas, priorización de taller | MD | ✅ Listo (carpeta `manuales/`) |
+
+> **Nota:** Los 3 manuales son la fuente de verdad para las reglas de negocio que los agentes de AgentCore consultan via RAG. Deben subirse a S3 en la carpeta de Knowledge Base para ser indexados por Bedrock.

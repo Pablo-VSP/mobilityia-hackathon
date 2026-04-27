@@ -30,9 +30,9 @@ s3://ado-telemetry-mvp/hackathon-data/
 │   └── docs/
 │       ├── motor_spn.json                ← Catálogo SPN para RAG
 │       ├── codigos-falla-catalogo.csv    ← Catálogo de fallas con severidad_inferencia
-│       ├── manual-reglas-mantenimiento-motor.md  ← (compañero de equipo)
-│       ├── manual-combustible.md         ← (compañero de equipo)
-│       ├── normas-conduccion-eficiente.pdf
+│       ├── manual-reglas-mantenimiento-motor.md  ← Umbrales, intervalos, correlaciones
+│       ├── manual-reglas-ambientales-emisiones.md ← CO₂, NOM-044, clasificación ambiental
+│       ├── manual-reglas-fallas-mantenimiento.md  ← Reglas por falla, escalamiento, priorización
 │       └── nom-044-resumen.pdf
 └── modelos/
     └── sagemaker/
