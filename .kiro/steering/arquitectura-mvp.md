@@ -3,7 +3,7 @@ inclusion: always
 ---
 
 # 🏗️ Arquitectura MVP — ADO MobilityIA
-## Hackathon AWS Builders League 2026 — Aplicando C-001, C-002, C-003 y C-004
+## Hackathon AWS Builders League 2026 — Aplicando C-001, C-002, C-003, C-004, C-005, C-006 y C-007
 
 ---
 
@@ -11,6 +11,8 @@ inclusion: always
 
 > Construir solo lo que se puede demostrar en vivo ante el jurado. Cada servicio AWS debe justificarse con una funcionalidad visible en la demo.
 > Los datos son **simulados** (C-004). No se usan métricas numéricas específicas (C-003).
+> Los agentes son de **AgentCore** (C-005). Esquemas alineados con `models/` (C-006).
+> Catálogo de fallas con `severidad_inferencia` para modelo predictivo (C-007).
 
 ---
 
@@ -32,7 +34,7 @@ inclusion: always
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  NÚCLEO DE IA — Amazon Bedrock AgentCore                    │
+│  NÚCLEO DE IA — Amazon Bedrock AgentCore (C-005)              │
 │                                                             │
 │  ┌─────────────────────┐  ┌─────────────────────────────┐  │
 │  │ Agente Combustible  │  │ Agente Mantenimiento        │  │
@@ -189,10 +191,12 @@ QuickSight Dashboard:
 
 2. **Lambda como simulador (C-002)** — Se dispara con EventBridge Scheduler durante la demo para mostrar "datos en vivo". El jurado ve el sistema reaccionando en tiempo real.
 
-3. **DynamoDB como hub central** — Tabla `ado-telemetria-live` con `bus_id` como PK y `timestamp` como SK.
+3. **DynamoDB como hub central** — Tabla `ado-telemetria-live` con `autobus` como PK y `timestamp` como SK. Estado consolidado por pivoteo de SPNs.
 
-4. **Knowledge Base con S3** — Documentos técnicos (manuales OBD, normas NOM-044, umbrales por ruta) indexados en Bedrock Knowledge Bases para RAG.
+4. **Knowledge Base con S3** — Catálogo SPN (`motor_spn.json`), catálogo de fallas con severidad inferida (C-007), manuales técnicos y normas NOM-044 indexados en Bedrock Knowledge Bases para RAG.
 
-5. **SageMaker entrenado con datos simulados** — El modelo predictivo se entrena con el dataset simulado generado en el Paso 1.
+5. **SageMaker entrenado con datos simulados** — El modelo predictivo se entrena con features derivadas de los 19 SPNs de mantenimiento + historial de fallas con `severidad_inferencia` (C-007). Fallback heurístico implementado en Lambda.
 
 6. **Lenguaje difuso en todas las respuestas (C-003)** — Los agentes están instruidos para no mencionar porcentajes ni valores monetarios específicos. Usan términos como "mejora significativa", "reducción notable", "mayor disponibilidad".
+
+7. **Agentes en AgentCore (C-005)** — Los agentes se despliegan en Amazon Bedrock AgentCore, no en Bedrock Agents clásico. Esto permite orquestación nativa de agentes autónomos con memoria, herramientas y RAG integrados.

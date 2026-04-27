@@ -13,6 +13,9 @@ inclusion: always
 
 > **C-003:** No se usan métricas con valores numéricos específicos. Se usa lenguaje difuso: "mayor", "menor", "reducción", "mejora", "optimización".
 > **C-004:** Los datos son **simulados** — no se usan datos reales de la flota ADO por seguridad de la información corporativa.
+> **C-005:** Los agentes son de **Amazon Bedrock AgentCore** — no de Bedrock Agents clásico.
+> **C-006:** Esquemas de datos alineados con los archivos reales en `models/` (telemetry-data, motor_spn, data_fault).
+> **C-007:** Catálogo de fallas con `severidad_inferencia` para el modelo predictivo de SageMaker.
 
 ---
 
@@ -35,9 +38,23 @@ Mobility ADO cuenta con infraestructura de telemetría (GPS, sensores, registros
 
 ---
 
-## Solución MVP (Hackathon — 5 días)
+## Consideraciones activas
 
-Dos agentes autónomos de IA que demuestran el mayor valor técnico y de negocio:
+| ID | Descripción |
+|---|---|
+| C-001 | MVP acotado para hackathon — último día de desarrollo |
+| C-002 | Ingesta simulada con Lambda — sin IoT Core ni Kinesis |
+| C-003 | Sin métricas numéricas específicas — lenguaje difuso en todas las comunicaciones |
+| C-004 | Datos simulados — seguridad de información corporativa de Mobility ADO |
+| C-005 | Agentes son de AgentCore — no de Bedrock Agents clásico |
+| C-006 | Esquemas alineados con `models/` (telemetry-data, motor_spn, data_fault) |
+| C-007 | Catálogo de fallas con `severidad_inferencia` para modelo predictivo |
+
+---
+
+## Solución MVP — 2 Agentes Autónomos de IA (AgentCore)
+
+Dos agentes autónomos de IA desplegados en **Amazon Bedrock AgentCore** (C-005) que demuestran el mayor valor técnico y de negocio:
 
 ### 🔥 Agente 1 — Motor de Inteligencia de Combustible
 - Detecta desviaciones de consumo por unidad y conductor (datos simulados en tiempo real)
@@ -64,11 +81,11 @@ Dos agentes autónomos de IA que demuestran el mayor valor técnico y de negocio
 
 ## Stack tecnológico central
 
-- **Amazon Bedrock AgentCore** — Orquestación de agentes
+- **Amazon Bedrock AgentCore** — Orquestación de agentes autónomos (C-005)
 - **Anthropic Claude 3.5 Sonnet** — Narrativas en lenguaje natural (español)
-- **Amazon SageMaker** — Modelo predictivo de eventos mecánicos
-- **Amazon S3** — Data Lake con datos **simulados** (C-004)
-- **AWS Lambda** — Simulador de ingesta en tiempo real (C-002)
-- **Amazon DynamoDB** — Estado en tiempo real por unidad
-- **Amazon Bedrock Knowledge Bases** — RAG con documentos técnicos simulados
-- **Amazon QuickSight** — Dashboard ejecutivo y métricas de emisiones CO₂
+- **Amazon SageMaker** — Modelo predictivo de eventos mecánicos (con fallback heurístico)
+- **Amazon S3** — Data Lake con datos **simulados** (C-004): telemetry-data, motor_spn, data_fault
+- **AWS Lambda** — Simulador de ingesta en tiempo real (C-002) + 7 tools para agentes + dashboard API
+- **Amazon DynamoDB** — Estado en tiempo real por unidad (pivoteo de SPNs)
+- **Amazon Bedrock Knowledge Bases** — RAG con catálogo SPN, manuales técnicos, normas NOM-044
+- **Amazon QuickSight** — Dashboard ejecutivo y métricas de emisiones CO₂ (o Streamlit como alternativa)
