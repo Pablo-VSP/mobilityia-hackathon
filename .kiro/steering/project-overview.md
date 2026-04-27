@@ -49,6 +49,7 @@ Mobility ADO cuenta con infraestructura de telemetría (GPS, sensores, registros
 | C-005 | Agentes son de AgentCore — no de Bedrock Agents clásico |
 | C-006 | Esquemas alineados con `models/` (telemetry-data, motor_spn, data_fault) |
 | C-007 | Catálogo de fallas con `severidad_inferencia` para modelo predictivo |
+| C-008 | Partición temporal: oct-dic 2020 para entrenamiento ML, enero 2021 para simulación en tiempo real |
 
 ---
 

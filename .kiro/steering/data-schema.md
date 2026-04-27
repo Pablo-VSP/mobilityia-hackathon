@@ -41,6 +41,7 @@ s3://ado-telemetry-mvp/hackathon-data/
 ```
 
 > **Nota:** El bucket real es `ado-telemetry-mvp` en `us-east-2`, profile `mobilityadods`. Los datos raw ya están subidos.
+> **C-008:** Los datos cubren oct 2020 – ene 2021. Entrenamiento ML usa solo oct-dic 2020. Enero 2021 se reserva para simulación en tiempo real (Lambda simulador → DynamoDB).
 
 ---
 

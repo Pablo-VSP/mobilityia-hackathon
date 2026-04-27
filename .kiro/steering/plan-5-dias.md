@@ -61,6 +61,7 @@ inclusion: always
 #### 1.3 Deploy de Lambdas
 - [ ] Crear Lambda layer `ado-common-layer` con el shared code
 - [ ] Deploy `ado-simulador-telemetria` con EventBridge Scheduler (rate 10s)
+  - **C-008:** El simulador debe leer solo datos de **enero 2021** de S3 para inyectar en DynamoDB como "tiempo real"
 - [ ] Deploy las 7 Lambdas de tools (3 combustible + 4 mantenimiento)
 - [ ] Deploy `ado-dashboard-api`
 - [ ] Probar simulador: verificar escritura en DynamoDB
@@ -94,8 +95,11 @@ inclusion: always
 
 ### BLOQUE 3 — SageMaker (1-2 horas, o confirmar fallback)
 > **Decisión:** Si no hay tiempo, el fallback heurístico en Lambda es suficiente para la demo.
+> **C-008:** Entrenamiento solo con datos oct-dic 2020. Enero 2021 reservado para simulación.
 
-- [ ] Opción A: Entrenar XGBoost rápido en SageMaker Studio
+- [ ] Opción A: Ejecutar `sagemaker/01-feature-engineering-and-training.py` en SageMaker Studio
+  - El script filtra automáticamente datos < 2021-01-01 para entrenamiento
+  - Entrena XGBoost y despliega endpoint `ado-prediccion-eventos`
 - [ ] Opción B: Confirmar que el fallback heurístico funciona correctamente
 - [ ] Probar `tool-predecir-evento` end-to-end
 

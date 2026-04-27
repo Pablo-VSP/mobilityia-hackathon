@@ -45,9 +45,15 @@ SPNS_MANTENIMIENTO = {
 VENTANA_DIAS = 7
 HORIZONTE_PREDICCION = 14
 
+# C-008: Partición temporal
+# Entrenamiento: oct-dic 2020 | Simulación tiempo real: enero 2021
+FECHA_CORTE_ENTRENAMIENTO = pd.Timestamp("2021-01-01")
+
 print("=" * 60)
 print("ADO MobilityIA — Modelo Predictivo de Fallas Críticas")
 print("=" * 60)
+print(f"  Datos de entrenamiento: antes de {FECHA_CORTE_ENTRENAMIENTO.date()}")
+print(f"  Datos de simulación (enero 2021): reservados para demo")
 
 # ============================================================
 # PASO 1: CARGAR DATOS DESDE S3
@@ -106,16 +112,24 @@ telemetria = telemetria.dropna(subset=["evento_valor", "evento_spn"])
 # Filtrar solo SPNs de mantenimiento
 tel_mant = telemetria[telemetria["evento_spn"].isin(SPNS_MANTENIMIENTO)].copy()
 
-print(f"  Telemetría de mantenimiento: {len(tel_mant):,} registros")
+# C-008: Filtrar solo datos de entrenamiento (oct-dic 2020)
+tel_mant["evento_fecha_dt"] = pd.to_datetime(tel_mant["evento_fecha"])
+tel_mant = tel_mant[tel_mant["evento_fecha_dt"] < FECHA_CORTE_ENTRENAMIENTO].copy()
+
+fallas_entrenamiento = fallas[fallas["fecha_hora"] < FECHA_CORTE_ENTRENAMIENTO].copy()
+
+print(f"  C-008 aplicada: solo datos antes de {FECHA_CORTE_ENTRENAMIENTO.date()}")
+print(f"  Telemetría de mantenimiento (entrenamiento): {len(tel_mant):,} registros")
+print(f"  Fallas (entrenamiento): {len(fallas_entrenamiento):,} registros")
 print(f"  Buses únicos en telemetría: {tel_mant['autobus'].nunique()}")
-print(f"  Buses únicos en fallas: {fallas['autobus'].nunique()}")
-print(f"  Rango de fechas telemetría: {tel_mant['evento_fecha'].min()} a {tel_mant['evento_fecha'].max()}")
-print(f"  Rango de fechas fallas: {fallas['fecha_hora'].min()} a {fallas['fecha_hora'].max()}")
+print(f"  Buses únicos en fallas: {fallas_entrenamiento['autobus'].nunique()}")
+print(f"  Rango de fechas telemetría: {tel_mant['evento_fecha_dt'].min().date()} a {tel_mant['evento_fecha_dt'].max().date()}")
+print(f"  Rango de fechas fallas: {fallas_entrenamiento['fecha_hora'].min()} a {fallas_entrenamiento['fecha_hora'].max()}")
 
 # Estadísticas de fallas por código
-print("\n  Distribución de fallas por código:")
+print("\n  Distribución de fallas por código (entrenamiento):")
 for codigo in sorted(CODIGOS_CRITICOS | CODIGOS_ESCALAMIENTO):
-    count = len(fallas[fallas["codigo"] == codigo])
+    count = len(fallas_entrenamiento[fallas_entrenamiento["codigo"] == codigo])
     sev = "SEV3" if codigo in CODIGOS_CRITICOS else "SEV2"
     print(f"    Código {codigo} ({sev}): {count:,} ocurrencias")
 
@@ -126,7 +140,7 @@ print("\n[3/7] Generando features por (autobus, fecha_corte)...")
 
 # Obtener lista de buses que tienen tanto telemetría como fallas
 buses_telemetria = set(tel_mant["autobus"].unique())
-buses_fallas = set(fallas["autobus"].unique())
+buses_fallas = set(fallas_entrenamiento["autobus"].unique())
 buses_comunes = buses_telemetria & buses_fallas
 print(f"  Buses con telemetría Y fallas: {len(buses_comunes)}")
 
@@ -137,8 +151,7 @@ if len(buses_comunes) == 0:
 else:
     buses_target = buses_comunes
 
-# Generar fechas de corte
-tel_mant["evento_fecha_dt"] = pd.to_datetime(tel_mant["evento_fecha"])
+# Generar fechas de corte (C-008: solo dentro del rango oct-dic 2020)
 fecha_min = tel_mant["evento_fecha_dt"].min() + timedelta(days=VENTANA_DIAS)
 fecha_max = tel_mant["evento_fecha_dt"].max() - timedelta(days=HORIZONTE_PREDICCION)
 
@@ -336,9 +349,9 @@ for bus_id in buses_target:
         
         # Features
         feat_spn = calcular_features_spn(ventana, catalogo_dict)
-        feat_fallas = calcular_features_fallas(bus_id, fecha_corte, fallas)
+        feat_fallas = calcular_features_fallas(bus_id, fecha_corte, fallas_entrenamiento)
         feat_ctx = calcular_features_contextuales(ventana)
-        target = calcular_target(bus_id, fecha_corte, fallas)
+        target = calcular_target(bus_id, fecha_corte, fallas_entrenamiento)
         
         row = {
             "autobus": bus_id,
