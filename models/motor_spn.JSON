@@ -1,1 +1,42 @@
-[{"data_type":"bigint              ","comment":"                    ","col_name":"id                  "},{"data_type":"string              ","comment":"                    ","col_name":"name                "},{"data_type":"string              ","comment":"                    ","col_name":"unidad              "},{"data_type":"double              ","comment":"                    ","col_name":"minimo              "},{"data_type":"double              ","comment":"                    ","col_name":"maximo              "},{"data_type":"string              ","comment":"                    ","col_name":"tipo                "},{"data_type":"double              ","comment":"                    ","col_name":"delta               "},{"data_type":"string              ","comment":"                    ","col_name":"variable_tipo       "}]
+[
+    {
+        "data_type": "bigint              ",
+        "comment": "                    ",
+        "col_name": "id                  "
+    },
+    {
+        "data_type": "string              ",
+        "comment": "                    ",
+        "col_name": "name                "
+    },
+    {
+        "data_type": "string              ",
+        "comment": "                    ",
+        "col_name": "unidad              "
+    },
+    {
+        "data_type": "double              ",
+        "comment": "                    ",
+        "col_name": "minimo              "
+    },
+    {
+        "data_type": "double              ",
+        "comment": "                    ",
+        "col_name": "maximo              "
+    },
+    {
+        "data_type": "string              ",
+        "comment": "                    ",
+        "col_name": "tipo                "
+    },
+    {
+        "data_type": "double              ",
+        "comment": "                    ",
+        "col_name": "delta               "
+    },
+    {
+        "data_type": "string              ",
+        "comment": "                    ",
+        "col_name": "variable_tipo       "
+    }
+]
