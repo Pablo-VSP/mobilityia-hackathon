@@ -37,8 +37,8 @@ logger.setLevel(logging.INFO)
 
 # Environment variables (Req 11.6)
 DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE_TELEMETRIA", "ado-telemetria-live")
-S3_BUCKET = os.environ.get("S3_BUCKET", "ado-mobilityia-mvp")
-S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "catalogo/motor_spn.json")
+S3_BUCKET = os.environ.get("S3_BUCKET", "ado-telemetry-mvp")
+S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "hackathon-data/catalogo/motor_spn.json")
 
 # Number of records to query for deviation analysis
 RECORDS_LIMIT = 10

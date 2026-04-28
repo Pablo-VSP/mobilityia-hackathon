@@ -128,7 +128,7 @@ Formato de logs:  JSON estructurado (CloudWatch)
 Variables de entorno comunes:
   - DYNAMODB_TABLE_TELEMETRIA: ado-telemetria-live
   - DYNAMODB_TABLE_ALERTAS: ado-alertas
-  - S3_BUCKET: ado-mobilityia-mvp
+  - S3_BUCKET: ado-telemetry-mvp
   - ENVIRONMENT: mvp
 ```
 
@@ -317,7 +317,7 @@ SPNS_DEMO_PRIORITARIOS = {
 }
 
 @lru_cache(maxsize=1)
-def cargar_catalogo_spn(bucket, key="catalogo/motor_spn.json"):
+def cargar_catalogo_spn(bucket, key="hackathon-data/catalogo/motor_spn.json"):
     """Carga el catálogo SPN desde S3. Se cachea en memoria."""
     s3 = boto3.client("s3")
     obj = s3.get_object(Bucket=bucket, Key=key)
@@ -506,7 +506,7 @@ Políticas comunes:
 Políticas adicionales por función:
   ado-simulador-telemetria:
     - dynamodb:PutItem, dynamodb:BatchWriteItem en ado-telemetria-live
-    - s3:GetObject en ado-mobilityia-mvp/telemetria-simulada/*
+    - s3:GetObject en ado-telemetry-mvp/hackathon-data/telemetria-simulada/*
   
   tool-generar-recomendacion:
     - dynamodb:PutItem en ado-alertas
@@ -515,7 +515,7 @@ Políticas adicionales por función:
     - sagemaker:InvokeEndpoint en ado-prediccion-eventos
   
   tool-buscar-patrones-historicos:
-    - s3:GetObject en ado-mobilityia-mvp/fallas-simuladas/*
+    - s3:GetObject en ado-telemetry-mvp/hackathon-data/fallas-simuladas/*
   
   ado-dashboard-api:
     - dynamodb:Query en ado-telemetria-live
@@ -527,7 +527,7 @@ Políticas adicionales por función:
 ## Estructura S3 adaptada a las fuentes reales
 
 ```
-s3://ado-mobilityia-mvp/
+s3://ado-telemetry-mvp/hackathon-data/
 ├── telemetria-simulada/              ← Datos de telemetry-data (simulados)
 │   └── {YYYY-MM}/
 │       └── {autobus}/
@@ -606,9 +606,9 @@ Concurrencia:     1
 
 ```yaml
 DYNAMODB_TABLE:       ado-telemetria-live
-S3_BUCKET:            ado-mobilityia-mvp
-S3_TELEMETRIA_PREFIX: telemetria-simulada/
-S3_CATALOGO_KEY:      catalogo/motor_spn.json
+S3_BUCKET:            ado-telemetry-mvp
+S3_TELEMETRIA_PREFIX: hackathon-data/telemetria-simulada/
+S3_CATALOGO_KEY:      hackathon-data/catalogo/motor_spn.json
 NUM_BUSES:            "20"
 ```
 
@@ -618,7 +618,7 @@ NUM_BUSES:            "20"
 1. EventBridge dispara cada 10 segundos
 
 2. Cargar catálogo SPN desde S3 (cacheado en memoria entre invocaciones)
-   catalogo = cargar_catalogo_spn(bucket, "catalogo/motor_spn.json")
+   catalogo = cargar_catalogo_spn(bucket, "hackathon-data/catalogo/motor_spn.json")
 
 3. Para cada bus simulado (lista de autobus IDs):
    a. Calcular offset stateless:
@@ -1215,7 +1215,7 @@ Trigger:          Bedrock AgentCore (Action Group)
 ```yaml
 SAGEMAKER_ENDPOINT:       ado-prediccion-eventos
 USE_HEURISTIC_FALLBACK:   "true"
-S3_CATALOGO_KEY:          catalogo/motor_spn.json
+S3_CATALOGO_KEY:          hackathon-data/catalogo/motor_spn.json
 ```
 
 ### Input
@@ -1460,7 +1460,7 @@ Dependencias:     pandas, pyarrow (en layer) — o JSON/CSV como alternativa
 ```
 1. Recibir codigo, y opcionalmente modelo, marca_comercial
 2. Leer data_fault desde S3:
-   s3://ado-mobilityia-mvp/fallas-simuladas/fallas_simuladas.parquet (o .json)
+   s3://ado-telemetry-mvp/hackathon-data/fallas-simuladas/fallas_simuladas.parquet (o .json)
 3. Filtrar fallas donde:
    - codigo == :codigo (match exacto o parcial)
    - Si modelo proporcionado: modelo == :modelo (priorizar, no excluir)

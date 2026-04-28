@@ -30,7 +30,7 @@ _s3_client = boto3.client("s3")
 @lru_cache(maxsize=4)
 def cargar_catalogo_spn(
     bucket: str,
-    key: str = "catalogo/motor_spn.json",
+    key: str = "hackathon-data/catalogo/motor_spn.json",
 ) -> dict[int, dict]:
     """
     Carga el catálogo SPN desde un archivo JSON en S3 y lo retorna
@@ -40,8 +40,8 @@ def cargar_catalogo_spn(
     posteriores en la misma instancia Lambda no repitan la lectura.
 
     Args:
-        bucket: Nombre del bucket S3 (ej: 'ado-mobilityia-mvp').
-        key: Clave del objeto JSON en S3 (default: 'catalogo/motor_spn.json').
+        bucket: Nombre del bucket S3 (ej: 'ado-telemetry-mvp').
+        key: Clave del objeto JSON en S3 (default: 'hackathon-data/catalogo/motor_spn.json').
 
     Returns:
         Diccionario {spn_id (int): {id, name, unidad, minimo, maximo, delta,

@@ -41,9 +41,9 @@ logger.setLevel(logging.INFO)
 
 # Environment variables (Req 11.6)
 DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE_TELEMETRIA", "ado-telemetria-live")
-S3_BUCKET = os.environ.get("S3_BUCKET", "ado-mobilityia-mvp")
-S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "catalogo/motor_spn.json")
-S3_FALLAS_KEY = os.environ.get("S3_FALLAS_KEY", "fallas-simuladas/data_fault.json")
+S3_BUCKET = os.environ.get("S3_BUCKET", "ado-telemetry-mvp")
+S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "hackathon-data/catalogo/motor_spn.json")
+S3_FALLAS_KEY = os.environ.get("S3_FALLAS_KEY", "hackathon-data/fallas-simuladas/data_fault.json")
 
 # Number of records to query for OBD analysis
 RECORDS_LIMIT = 20

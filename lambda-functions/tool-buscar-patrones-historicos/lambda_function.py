@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # Environment variables
-S3_BUCKET = os.environ.get("S3_BUCKET", "ado-mobilityia-mvp")
-S3_FALLAS_KEY = os.environ.get("S3_FALLAS_KEY", "fallas-simuladas/data_fault.json")
+S3_BUCKET = os.environ.get("S3_BUCKET", "ado-telemetry-mvp")
+S3_FALLAS_KEY = os.environ.get("S3_FALLAS_KEY", "hackathon-data/fallas-simuladas/data_fault.json")
 
 # Maximum events to return (Req 8.3)
 MAX_EVENTS = 10

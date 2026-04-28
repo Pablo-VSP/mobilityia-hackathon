@@ -16,8 +16,9 @@ import os
 from decimal import Decimal
 
 import boto3
+import statistics
 
-from ado_common.spn_catalog import cargar_catalogo_spn, obtener_spn
+from ado_common.spn_catalog import cargar_catalogo_spn, obtener_spn, variacion_anomala
 from ado_common.dynamo_utils import query_latest_records
 from ado_common.s3_utils import read_json_from_s3
 from ado_common.response import build_agent_response, build_error_response
@@ -31,6 +32,8 @@ from ado_common.constants import (
     SPN_NIVEL_ANTICONGELANTE,
     SPN_VOLTAJE_BATERIA,
     SPN_NIVEL_UREA,
+    SPN_ODOMETRO,
+    SPN_HORAS_MOTOR,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,10 +41,14 @@ logger.setLevel(logging.INFO)
 
 # Environment variables (Req 11.6)
 DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE_TELEMETRIA", "ado-telemetria-live")
-S3_BUCKET = os.environ.get("S3_BUCKET", "ado-mobilityia-mvp")
-S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "catalogo/motor_spn.json")
-S3_FALLAS_KEY = os.environ.get("S3_FALLAS_KEY", "fallas-simuladas/data_fault.json")
+S3_BUCKET = os.environ.get("S3_BUCKET", "ado-telemetry-mvp")
+S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "hackathon-data/catalogo/motor_spn.json")
+S3_FALLAS_KEY = os.environ.get("S3_FALLAS_KEY", "hackathon-data/fallas-simuladas/data_fault.json")
 SAGEMAKER_ENDPOINT = os.environ.get("SAGEMAKER_ENDPOINT", "ado-prediccion-eventos")
+S3_FEATURE_NAMES_KEY = os.environ.get(
+    "S3_FEATURE_NAMES_KEY",
+    "hackathon-data/modelos/sagemaker/training-data/feature_names.json",
+)
 
 # Number of records to query for prediction analysis
 RECORDS_LIMIT = 20
@@ -53,6 +60,19 @@ RISK_THRESHOLDS = {
     "ELEVADO": (6, 8),
     # CRITICO: score > 8
 }
+
+# ML model risk thresholds (from model_summary.json)
+ML_RISK_THRESHOLDS = {
+    "BAJO": (0.0, 0.25),
+    "MODERADO": (0.25, 0.50),
+    "ELEVADO": (0.50, 0.75),
+    "CRITICO": (0.75, 1.0),
+}
+
+# Códigos de falla críticos (severidad_inferencia = 3)
+CODIGOS_CRITICOS = {"86", "100", "158"}
+# Códigos de escalamiento (severidad_inferencia = 2)
+CODIGOS_ESCALAMIENTO = {"32", "131", "111", "37"}
 
 # Urgency mapping (Req 7.5)
 URGENCY_MAP = {
@@ -83,6 +103,8 @@ SPN_COMPONENT_MAP = {
 
 # SageMaker client (lazy init)
 _sagemaker_client = None
+# Feature names cache
+_feature_names = None
 
 
 def _get_sagemaker_client():
@@ -91,6 +113,26 @@ def _get_sagemaker_client():
     if _sagemaker_client is None:
         _sagemaker_client = boto3.client("sagemaker-runtime")
     return _sagemaker_client
+
+
+def _load_feature_names():
+    """Load the ordered feature names list from S3 (cached across invocations)."""
+    global _feature_names
+    if _feature_names is None:
+        try:
+            _feature_names = read_json_from_s3(S3_BUCKET, S3_FEATURE_NAMES_KEY)
+            logger.info(json.dumps({
+                "action": "load_feature_names",
+                "count": len(_feature_names),
+            }))
+        except Exception as exc:
+            logger.warning(json.dumps({
+                "action": "load_feature_names",
+                "error": str(exc),
+                "message": "No se pudo cargar feature_names.json, SageMaker no disponible",
+            }))
+            _feature_names = []
+    return _feature_names
 
 
 # ---------------------------------------------------------------------------
@@ -147,38 +189,52 @@ def _safe_avg(values):
 def _build_feature_vector(records, catalogo_spn):
     """Build a feature vector from maintenance SPNs across records.
 
-    For each maintenance SPN, computes: average, max, min, and count of
-    out-of-range values.
+    For each maintenance SPN, computes 6 statistics matching the trained
+    model: avg, max, min, std, out-of-range count, and anomaly count.
 
     Args:
         records: List of DynamoDB items (most recent first).
         catalogo_spn: The SPN catalog dict.
 
     Returns:
-        Dict mapping spn_id -> {avg, max, min, count, out_of_range_count}.
+        Dict mapping spn_id -> {avg, max, min, std, count,
+        out_of_range_count, anomaly_count}.
     """
     features = {}
 
     for spn_id in sorted(SPNS_MANTENIMIENTO):
         values = _extract_spn_values(records, spn_id)
         if not values:
+            features[spn_id] = {
+                "avg": 0.0, "max": 0.0, "min": 0.0, "std": 0.0,
+                "count": 0, "out_of_range_count": 0, "anomaly_count": 0,
+            }
             continue
 
         spn_info = obtener_spn(catalogo_spn, spn_id)
         out_of_range_count = 0
+        anomaly_count = 0
+
         if spn_info:
             minimo = spn_info["minimo"]
             maximo = spn_info["maximo"]
             for v in values:
                 if v < minimo or v > maximo:
                     out_of_range_count += 1
+            for i in range(1, len(values)):
+                if variacion_anomala(catalogo_spn, spn_id, values[i - 1], values[i]):
+                    anomaly_count += 1
+
+        std_val = statistics.stdev(values) if len(values) >= 2 else 0.0
 
         features[spn_id] = {
             "avg": sum(values) / len(values),
             "max": max(values),
             "min": min(values),
+            "std": std_val,
             "count": len(values),
             "out_of_range_count": out_of_range_count,
+            "anomaly_count": anomaly_count,
         }
 
     return features
@@ -188,49 +244,282 @@ def _build_feature_vector(records, catalogo_spn):
 # SageMaker invocation (Req 7.2)
 # ---------------------------------------------------------------------------
 
-def _invoke_sagemaker(features, autobus):
-    """Attempt to invoke the SageMaker endpoint for ML-based prediction.
+def _build_fault_features(fallas_recientes):
+    """Build fault-related features matching the trained model schema.
+
+    Features:
+        fallas_criticas_30d, fallas_criticas_90d, fallas_sev2_30d,
+        fallas_sev2_recurrentes_30d, severidad_max_30d,
+        dias_desde_ultima_falla_critica, tiene_falla_activa,
+        codigos_criticos_unicos_90d, fallas_correlacionadas
 
     Args:
-        features: Feature vector dict from _build_feature_vector().
-        autobus: Bus identifier.
+        fallas_recientes: List of fault dicts sorted by fecha_hora desc.
+
+    Returns:
+        Dict with the 9 fault features.
+    """
+    from datetime import datetime, timedelta
+
+    now = datetime.utcnow()
+    d30 = now - timedelta(days=30)
+    d90 = now - timedelta(days=90)
+
+    criticas_30 = 0
+    criticas_90 = 0
+    sev2_30 = 0
+    sev_max_30 = 0
+    dias_ultima_critica = 999
+    tiene_activa = 0
+    codigos_criticos_set = set()
+    codigos_30d = []
+
+    for f in fallas_recientes:
+        codigo = str(f.get("codigo", "")).strip()
+        sev = _safe_float(f.get("severidad"))
+        fecha_str = f.get("fecha_hora", "")
+        try:
+            fecha = datetime.fromisoformat(fecha_str.replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            continue
+
+        es_critico = codigo in CODIGOS_CRITICOS
+        es_sev2 = codigo in CODIGOS_ESCALAMIENTO
+
+        if fecha >= d90:
+            if es_critico:
+                criticas_90 += 1
+                codigos_criticos_set.add(codigo)
+            if fecha >= d30:
+                if es_critico:
+                    criticas_30 += 1
+                if es_sev2:
+                    sev2_30 += 1
+                if sev is not None and sev > sev_max_30:
+                    sev_max_30 = int(sev)
+                codigos_30d.append(codigo)
+
+        if es_critico:
+            dias = (now - fecha).days
+            if dias < dias_ultima_critica:
+                dias_ultima_critica = dias
+
+        # Active fault = within last 24h
+        if (now - fecha).total_seconds() < 86400:
+            tiene_activa = 1
+
+    # Recurrentes: códigos sev2 que aparecen más de una vez en 30d
+    sev2_recurrentes = 0
+    for c in CODIGOS_ESCALAMIENTO:
+        if codigos_30d.count(c) > 1:
+            sev2_recurrentes += 1
+
+    # Fallas correlacionadas: si hay tanto críticas como sev2 en 30d
+    fallas_correlacionadas = 1 if (criticas_30 > 0 and sev2_30 > 0) else 0
+
+    if dias_ultima_critica == 999:
+        dias_ultima_critica = 365  # No critical faults found
+
+    return {
+        "fallas_criticas_30d": criticas_30,
+        "fallas_criticas_90d": criticas_90,
+        "fallas_sev2_30d": sev2_30,
+        "fallas_sev2_recurrentes_30d": sev2_recurrentes,
+        "severidad_max_30d": sev_max_30,
+        "dias_desde_ultima_falla_critica": dias_ultima_critica,
+        "tiene_falla_activa": tiene_activa,
+        "codigos_criticos_unicos_90d": len(codigos_criticos_set),
+        "fallas_correlacionadas": fallas_correlacionadas,
+    }
+
+
+def _build_contextual_features(features, records):
+    """Build contextual features matching the trained model schema.
+
+    Features: balata_min_pct, odometro_km, horas_motor_h,
+              total_spns_fuera_rango, total_anomalias
+
+    Args:
+        features: SPN feature dict from _build_feature_vector().
+        records: DynamoDB records.
+
+    Returns:
+        Dict with the 5 contextual features.
+    """
+    # Minimum brake pad percentage across all 6 positions
+    balata_vals = []
+    for spn_id in sorted(SPNS_BALATAS):
+        f = features.get(spn_id)
+        if f and f["count"] > 0:
+            balata_vals.append(f["min"])
+    balata_min = min(balata_vals) if balata_vals else 100.0
+
+    # Odometer and engine hours from latest record
+    odometro = 0.0
+    horas_motor = 0.0
+    if records:
+        latest = records[0]
+        spn_vals = latest.get("spn_valores", {})
+        od = spn_vals.get(str(SPN_ODOMETRO))
+        if od:
+            odometro = _safe_float(od.get("valor")) or 0.0
+        hm = spn_vals.get(str(SPN_HORAS_MOTOR))
+        if hm:
+            horas_motor = _safe_float(hm.get("valor")) or 0.0
+
+    # Total SPNs out of range and total anomalies
+    total_oor = sum(f["out_of_range_count"] for f in features.values() if f["count"] > 0)
+    total_anomalias = sum(f["anomaly_count"] for f in features.values() if f["count"] > 0)
+
+    return {
+        "balata_min_pct": balata_min,
+        "odometro_km": odometro,
+        "horas_motor_h": horas_motor,
+        "total_spns_fuera_rango": total_oor,
+        "total_anomalias": total_anomalias,
+    }
+
+
+def _build_csv_payload(features, fault_features, contextual_features, feature_names):
+    """Build a CSV row matching the exact feature order expected by the model.
+
+    The feature_names list defines the column order. Each name follows one of:
+      - spn_{id}_{stat}_7d  (telemetry: avg, max, min, std, oor_count, anomaly_count)
+      - fault feature name  (fallas_criticas_30d, etc.)
+      - contextual feature  (balata_min_pct, etc.)
+
+    Args:
+        features: SPN feature dict from _build_feature_vector().
+        fault_features: Dict from _build_fault_features().
+        contextual_features: Dict from _build_contextual_features().
+        feature_names: Ordered list of 128 feature names.
+
+    Returns:
+        CSV string with 128 comma-separated values.
+    """
+    stat_map = {
+        "avg": "avg",
+        "max": "max",
+        "min": "min",
+        "std": "std",
+        "oor_count": "out_of_range_count",
+        "anomaly_count": "anomaly_count",
+    }
+
+    values = []
+    for name in feature_names:
+        if name.startswith("spn_"):
+            # Parse: spn_{id}_{stat}_7d
+            parts = name.split("_")
+            # spn_{id}_{stat}_7d → id is parts[1], stat is parts[2] (or parts[2]_parts[3])
+            spn_id = int(parts[1])
+            # Reconstruct stat name: everything between spn_{id}_ and _7d
+            stat_suffix = "_".join(parts[2:])  # e.g. "avg_7d", "oor_count_7d"
+            stat_key = stat_suffix.replace("_7d", "")  # e.g. "avg", "oor_count"
+            internal_key = stat_map.get(stat_key, stat_key)
+
+            spn_feat = features.get(spn_id)
+            if spn_feat and internal_key in spn_feat:
+                values.append(str(round(float(spn_feat[internal_key]), 6)))
+            else:
+                values.append("0")
+        elif name in fault_features:
+            values.append(str(fault_features[name]))
+        elif name in contextual_features:
+            values.append(str(round(float(contextual_features[name]), 6)))
+        else:
+            values.append("0")
+
+    return ",".join(values)
+
+
+def _classify_ml_risk(probability):
+    """Classify risk level from ML model probability output.
+
+    Args:
+        probability: Float between 0 and 1.
+
+    Returns:
+        Tuple of (risk_level, urgency, description, score).
+    """
+    if probability >= 0.75:
+        level = "CRITICO"
+    elif probability >= 0.50:
+        level = "ELEVADO"
+    elif probability >= 0.25:
+        level = "MODERADO"
+    else:
+        level = "BAJO"
+
+    return level, URGENCY_MAP[level], RISK_DESCRIPTIONS[level], round(probability, 4)
+
+
+def _invoke_sagemaker(features, fault_features, contextual_features, autobus):
+    """Invoke the SageMaker XGBoost endpoint with a properly formatted CSV payload.
+
+    Builds the 128-feature CSV row in the exact order defined by
+    feature_names.json, sends it as text/csv, and parses the probability
+    output.
+
+    Args:
+        features: SPN feature dict from _build_feature_vector().
+        fault_features: Dict from _build_fault_features().
+        contextual_features: Dict from _build_contextual_features().
+        autobus: Bus identifier for logging.
 
     Returns:
         Dict with ML prediction result, or None if invocation fails.
     """
     try:
+        feature_names = _load_feature_names()
+        if not feature_names:
+            logger.warning(json.dumps({
+                "action": "invoke_sagemaker",
+                "error": "feature_names not available",
+            }))
+            return None
+
         client = _get_sagemaker_client()
 
-        # Build payload for SageMaker
-        payload = {
+        csv_payload = _build_csv_payload(
+            features, fault_features, contextual_features, feature_names,
+        )
+
+        logger.info(json.dumps({
+            "action": "invoke_sagemaker_request",
+            "endpoint": SAGEMAKER_ENDPOINT,
             "autobus": autobus,
-            "features": {
-                str(spn_id): {
-                    "avg": round(f["avg"], 4),
-                    "max": round(f["max"], 4),
-                    "min": round(f["min"], 4),
-                    "out_of_range_count": f["out_of_range_count"],
-                }
-                for spn_id, f in features.items()
-            },
-        }
+            "feature_count": len(feature_names),
+            "payload_length": len(csv_payload),
+        }))
 
         response = client.invoke_endpoint(
             EndpointName=SAGEMAKER_ENDPOINT,
-            ContentType="application/json",
-            Body=json.dumps(payload),
+            ContentType="text/csv",
+            Body=csv_payload,
         )
 
-        result = json.loads(response["Body"].read().decode("utf-8"))
+        result_body = response["Body"].read().decode("utf-8").strip()
+        probability = float(result_body)
+
+        nivel_riesgo, urgencia, descripcion, score = _classify_ml_risk(probability)
 
         logger.info(json.dumps({
             "action": "invoke_sagemaker",
             "endpoint": SAGEMAKER_ENDPOINT,
             "autobus": autobus,
             "result": "success",
+            "probability": probability,
+            "nivel_riesgo": nivel_riesgo,
         }))
 
-        return result
+        return {
+            "nivel_riesgo": nivel_riesgo,
+            "urgencia": urgencia,
+            "descripcion": descripcion,
+            "score": score,
+            "probabilidad_ml": probability,
+        }
 
     except Exception as exc:
         logger.warning(json.dumps({
@@ -624,18 +913,24 @@ def lambda_handler(event, context):
     # --- 6. Read recent faults from S3 ---
     fallas_recientes = _obtener_fallas_recientes(autobus, S3_BUCKET, S3_FALLAS_KEY)
 
+    # --- 6b. Build fault and contextual features for ML model ---
+    fault_features = _build_fault_features(fallas_recientes)
+    contextual_features = _build_contextual_features(features, records)
+
     # --- 7. Attempt SageMaker invocation (Req 7.2) ---
-    ml_result = _invoke_sagemaker(features, autobus)
+    ml_result = _invoke_sagemaker(features, fault_features, contextual_features, autobus)
 
     if ml_result is not None:
         # ML prediction succeeded (Req 7.7)
         metodo_prediccion = "modelo_ml"
-        nivel_riesgo = ml_result.get("nivel_riesgo", "MODERADO")
-        urgencia = URGENCY_MAP.get(nivel_riesgo, "PROXIMO_SERVICIO")
-        descripcion = ml_result.get("descripcion", RISK_DESCRIPTIONS.get(nivel_riesgo, ""))
-        factores = ml_result.get("factores_contribuyentes", [])
-        componentes = ml_result.get("componentes_en_riesgo", [])
-        score = ml_result.get("score", 0)
+        nivel_riesgo = ml_result["nivel_riesgo"]
+        urgencia = ml_result["urgencia"]
+        descripcion = ml_result["descripcion"]
+        score = ml_result["score"]
+
+        # Still run heuristic to get contributing factors and components
+        _, factores, contributing_spns = _heuristic_score(features, fallas_recientes)
+        componentes = _get_at_risk_components(contributing_spns)
     else:
         # --- 8. Heuristic fallback (Req 7.3, 7.4) ---
         metodo_prediccion = "heuristica"

@@ -65,7 +65,7 @@ Los datos **no provienen de GCP ni de buses reales**. Se generan con un script P
 ```
 Script generador (Python)
   └── Genera CSV/Parquet simulados
-        └── aws s3 cp → s3://ado-mobilityia-mvp/
+        └── aws s3 cp → s3://ado-telemetry-mvp/hackathon-data/
               ├── telemetria-simulada/      ← lecturas de sensores ficticias
               ├── fallas-simuladas/         ← historial de eventos mecánicos
               └── knowledge-base/           ← manuales OBD, normas NOM-044
@@ -124,11 +124,11 @@ generate_simulated_telemetry(
     n_buses=20,           # 20 buses ficticios para la demo
     n_routes=7,           # 7 rutas principales de ADO
     n_days=90,            # 90 días de historial simulado
-    output='s3://ado-mobilityia-mvp/telemetria-simulada/'
+    output='s3://ado-telemetry-mvp/hackathon-data/telemetria-simulada/'
 )
 generate_simulated_failures(
     n_events=500,         # 500 eventos de falla históricos simulados
-    output='s3://ado-mobilityia-mvp/fallas-simuladas/'
+    output='s3://ado-telemetry-mvp/hackathon-data/fallas-simuladas/'
 )
 ```
 

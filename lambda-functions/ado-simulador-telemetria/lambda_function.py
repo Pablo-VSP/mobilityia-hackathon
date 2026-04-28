@@ -84,9 +84,9 @@ def clasificar_consumo(spn_valores: dict) -> str:
 
 # Environment variables (Req 11.5)
 NUM_BUSES = int(os.environ.get("NUM_BUSES", "20"))
-S3_BUCKET = os.environ.get("S3_BUCKET", "ado-mobilityia-mvp")
-S3_TELEMETRIA_PREFIX = os.environ.get("S3_TELEMETRIA_PREFIX", "telemetria-simulada/")
-S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "catalogo/motor_spn.json")
+S3_BUCKET = os.environ.get("S3_BUCKET", "ado-telemetry-mvp")
+S3_TELEMETRIA_PREFIX = os.environ.get("S3_TELEMETRIA_PREFIX", "hackathon-data/telemetria-simulada/")
+S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "hackathon-data/catalogo/motor_spn.json")
 DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "ado-telemetria-live")
 
 # Temporal window size in seconds for grouping records (~30s)

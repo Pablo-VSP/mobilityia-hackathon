@@ -26,7 +26,7 @@ def read_json_from_s3(bucket: str, key: str) -> dict | list:
 
     Args:
         bucket: Nombre del bucket S3.
-        key: Clave del objeto en S3 (ej: 'fallas-simuladas/data_fault.json').
+        key: Clave del objeto en S3 (ej: 'hackathon-data/fallas-simuladas/data_fault.json').
 
     Returns:
         Contenido parseado del JSON (dict o list).
@@ -125,7 +125,7 @@ def list_objects(bucket: str, prefix: str) -> list[str]:
 
     Args:
         bucket: Nombre del bucket S3.
-        prefix: Prefijo para filtrar objetos (ej: 'telemetria-simulada/2026-04/').
+        prefix: Prefijo para filtrar objetos (ej: 'hackathon-data/telemetria-simulada/2026-04/').
 
     Returns:
         Lista de strings con las claves de los objetos encontrados.

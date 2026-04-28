@@ -35,8 +35,8 @@ logger.setLevel(logging.INFO)
 # ---------------------------------------------------------------------------
 TABLE_TELEMETRIA = os.environ.get("DYNAMODB_TABLE_TELEMETRIA", "ado-telemetria-live")
 TABLE_ALERTAS = os.environ.get("DYNAMODB_TABLE_ALERTAS", "ado-alertas")
-S3_BUCKET = os.environ.get("S3_BUCKET", "ado-mobilityia-mvp")
-S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "catalogo/motor_spn.json")
+S3_BUCKET = os.environ.get("S3_BUCKET", "ado-telemetry-mvp")
+S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "hackathon-data/catalogo/motor_spn.json")
 
 # DynamoDB resource for alertas scan (not covered by dynamo_utils helpers)
 _dynamodb = boto3.resource("dynamodb")

@@ -240,9 +240,9 @@ def build_api_response(body: dict, status_code: int = 200) -> dict:
 
 **Environment variables:**
 - `DYNAMODB_TABLE` = `ado-telemetria-live`
-- `S3_BUCKET` = `ado-mobilityia-mvp`
-- `S3_TELEMETRIA_PREFIX` = `telemetria-simulada/`
-- `S3_CATALOGO_KEY` = `catalogo/motor_spn.json`
+- `S3_BUCKET` = `ado-telemetry-mvp`
+- `S3_TELEMETRIA_PREFIX` = `hackathon-data/telemetria-simulada/`
+- `S3_CATALOGO_KEY` = `hackathon-data/catalogo/motor_spn.json`
 - `NUM_BUSES` = `20`
 
 **Execution flow:**
