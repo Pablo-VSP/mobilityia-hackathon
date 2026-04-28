@@ -15,93 +15,103 @@ inclusion: always
 ## Estado actual del proyecto
 
 ### ✅ Completado
-- 9 funciones Lambda codificadas y listas para deploy
-- Shared layer `ado-common` con catálogo SPN, pivoteo, utilidades
+- 9 funciones Lambda codificadas, desplegadas y activas en us-east-2
+  - Bucket de Lambdas: `mobilityia-hackathon-bl-2026`
+  - Bucket de datos raw: `ado-telemetry-mvp`
+- Shared layer `ado-common-layer` (v2) desplegado
+- DynamoDB tablas creadas: `ado-telemetria-live`, `ado-alertas`
+- Knowledge Base creada: `ado-mobilityia-kb` (ID: `4OAVLRB8VI`) con 5 documentos indexados
+- Modelo XGBoost entrenado y endpoint desplegado: `ado-prediccion-eventos` (InService, 128 features)
+- 2 Agentes Bedrock creados y en estado PREPARED:
+  - `ado-agente-combustible` (ID: `5N3U0PMGXX`) — modelo: Nova Micro, 3 action groups
+  - `ado-agente-mantenimiento` (ID: `KLLFLAH0SJ`) — modelo: Nova Pro, 4 action groups
 - Catálogo de 36 SPNs confirmados con rangos y umbrales
 - Catálogo de fallas con `severidad_inferencia` clasificada (C-007)
+- 3 manuales completos subidos a S3 Knowledge Base
 - Documentación completa: steering files, prompts de agentes, esquemas de datos
-- Plan de modelo predictivo SageMaker con fallback heurístico
 
-### ❌ Pendiente de desplegar
-- Infraestructura AWS (S3, DynamoDB, Lambda, IAM)
-- Datos simulados en S3
-- Agentes de AgentCore con tools conectados
-- Knowledge Base en Bedrock
-- SageMaker endpoint (o confirmar fallback heurístico)
-- Dashboard (QuickSight o Streamlit)
+### ⚠️ Pendiente — Acciones inmediatas
+- **Knowledge Base NO asociada a los agentes** — Ambos agentes tienen 0 Knowledge Bases asociadas
+- **Verificar que el simulador apunte a datos de enero 2021** (C-008)
+- **Probar flujo end-to-end**: simulador → DynamoDB → agentes → respuesta
+- **Dashboard** (QuickSight o Streamlit)
+
+### 📋 IDs de recursos AWS (us-east-2, cuenta 084032333314)
+
+| Recurso | ID / Nombre |
+|---|---|
+| Agente Combustible | `5N3U0PMGXX` (`ado-agente-combustible`) |
+| Agente Mantenimiento | `KLLFLAH0SJ` (`ado-agente-mantenimiento`) |
+| Knowledge Base | `4OAVLRB8VI` (`ado-mobilityia-kb`) |
+| Data Source KB | `LL4E15XKR4` (`manuales-y-catalogos`) |
+| SageMaker Endpoint | `ado-prediccion-eventos` (InService) |
+| DynamoDB Telemetría | `ado-telemetria-live` |
+| DynamoDB Alertas | `ado-alertas` |
+| Bucket datos raw | `ado-telemetry-mvp` |
+| Bucket lambdas | `mobilityia-hackathon-bl-2026` |
+| Lambda Simulador | `ado-simulador-telemetria` |
+| Lambda Predecir | `tool-predecir-evento` (SAGEMAKER_ENDPOINT=ado-prediccion-eventos) |
+| Rol Agentes | `ado-bedrock-agent-role` |
+| Rol Lambdas | `ado-lambda-execution-role` |
 
 ---
 
 ## Plan del día — Bloques de trabajo
 
-### BLOQUE 1 — Infraestructura base (2-3 horas)
-> **Objetivo:** S3 + DynamoDB + Lambda simulador funcionando.
+### BLOQUE 1 — Infraestructura base ✅ COMPLETADO
+> S3 + DynamoDB + Lambdas desplegadas por compañero de equipo.
 
-#### 1.1 Infraestructura con CDK/CloudFormation + CLI
-- [ ] Crear bucket S3: `ado-mobilityia-mvp` con estructura de carpetas
-- [ ] Crear tabla DynamoDB `ado-telemetria-live`
-  - PK: `autobus` (S) | SK: `timestamp` (S)
-  - TTL: `ttl_expiry`
-  - GSI: `viaje_ruta-timestamp-index`
-- [ ] Crear tabla DynamoDB `ado-alertas`
-  - PK: `alerta_id` (S) | SK: `timestamp` (S)
-- [ ] Crear roles IAM (Lambda execution, Bedrock access, SageMaker)
+#### 1.1 Infraestructura ✅
+- [x] Bucket S3 `mobilityia-hackathon-bl-2026` (lambdas y catálogos)
+- [x] Bucket S3 `ado-telemetry-mvp` (datos raw)
+- [x] Tabla DynamoDB `ado-telemetria-live`
+- [x] Tabla DynamoDB `ado-alertas`
+- [x] Roles IAM: `ado-lambda-execution-role`, `ado-bedrock-agent-role`
 
-#### 1.2 Datos simulados en S3
-- [x] Datos de telemetría ya en S3 (1,339 archivos Parquet, ~447 MB)
-- [x] Datos de fallas ya en S3 (123 archivos Parquet, ~6.5 MB)
-- [x] Catálogo SPN ya en S3 (1 archivo Parquet)
-- [ ] Subir catálogo SPN en JSON (`motor_spn.json`) a `catalogo/`
-- [ ] Subir 3 manuales de Knowledge Base a `knowledge-base/docs/`:
-  - `manual-reglas-mantenimiento-motor.md` ✅ (en carpeta `manuales/`)
-  - `manual-reglas-ambientales-emisiones.md` ✅ (en carpeta `manuales/`)
-  - `manual-reglas-fallas-mantenimiento.md` ✅ (en carpeta `manuales/`)
-- [ ] Subir `codigos-falla-catalogo.csv` (generado desde `fault_data_catalog.JSON`)
+#### 1.2 Datos en S3 ✅
+- [x] Datos de telemetría (1,339 archivos Parquet, ~447 MB, 27.4M registros)
+- [x] Datos de fallas (123 archivos Parquet, ~6.5 MB, 550K registros)
+- [x] Catálogo SPN (1 archivo Parquet, 37 variables)
+- [x] 3 manuales + 2 catálogos en Knowledge Base S3
 
-#### 1.3 Deploy de Lambdas
-- [ ] Crear Lambda layer `ado-common-layer` con el shared code
-- [ ] Deploy `ado-simulador-telemetria` con EventBridge Scheduler (rate 10s)
-  - **C-008:** El simulador debe leer solo datos de **enero 2021** de S3 para inyectar en DynamoDB como "tiempo real"
-- [ ] Deploy las 7 Lambdas de tools (3 combustible + 4 mantenimiento)
-- [ ] Deploy `ado-dashboard-api`
-- [ ] Probar simulador: verificar escritura en DynamoDB
+#### 1.3 Lambdas desplegadas ✅
+- [x] `ado-simulador-telemetria` (512 MB, 30s timeout)
+- [x] `tool-consultar-telemetria`
+- [x] `tool-calcular-desviacion`
+- [x] `tool-listar-buses-activos`
+- [x] `tool-consultar-obd`
+- [x] `tool-predecir-evento` (SAGEMAKER_ENDPOINT=ado-prediccion-eventos)
+- [x] `tool-buscar-patrones-historicos`
+- [x] `tool-generar-recomendacion`
+- [x] `ado-dashboard-api`
+- [x] Layer `ado-common-layer` v2
 
-### BLOQUE 2 — Agentes de AgentCore (2-3 horas)
-> **Objetivo:** Ambos agentes respondiendo en español con datos simulados.
+### BLOQUE 2 — Agentes Bedrock (⚠️ PARCIALMENTE COMPLETADO)
+> **Pendiente crítico:** Asociar Knowledge Base a ambos agentes.
 
-#### 2.1 Knowledge Base
+#### 2.1 Knowledge Base ✅
 - [x] Crear Knowledge Base en Bedrock: `ado-mobilityia-kb` (ID: `4OAVLRB8VI`)
-  - Data source: `manuales-y-catalogos` (ID: `LL4E15XKR4`)
-  - S3: `s3://ado-telemetry-mvp/hackathon-data/knowledge-base/docs/`
-  - Embeddings: Amazon Titan Text Embeddings V2
-  - Vector store: OpenSearch Serverless (auto-created)
-  - 5 documentos indexados: 3 manuales + catálogo SPN + catálogo fallas
-- [ ] Verificar respuestas del RAG con preguntas de prueba
+- [x] 5 documentos indexados y sincronizados
 
-#### 2.2 Agente Combustible (AgentCore — C-005)
-- [ ] Crear agente `ado-agente-combustible` en AgentCore
-- [ ] Configurar system prompt (ver `agentes-prompts.md`)
-- [ ] Asociar Action Group con 3 Lambdas tools
-- [ ] Asociar Knowledge Base
-- [ ] Modelo: Claude 3.5 Sonnet
+#### 2.2 Agente Combustible ✅ (parcial)
+- [x] Agente creado: `ado-agente-combustible` (ID: `5N3U0PMGXX`)
+- [x] Modelo: Amazon Nova Micro
+- [x] 3 Action Groups: consultar-telemetria, calcular-desviacion, listar-buses-activos
+- [ ] **⚠️ PENDIENTE: Asociar Knowledge Base `4OAVLRB8VI`**
 - [ ] Probar con preguntas de demo
 
-#### 2.3 Agente Mantenimiento (AgentCore — C-005)
-- [ ] Crear agente `ado-agente-mantenimiento` en AgentCore
-- [ ] Configurar system prompt (ver `agentes-prompts.md`)
-- [ ] Asociar Action Group con 4 Lambdas tools
-- [ ] Asociar Knowledge Base
+#### 2.3 Agente Mantenimiento ✅ (parcial)
+- [x] Agente creado: `ado-agente-mantenimiento` (ID: `KLLFLAH0SJ`)
+- [x] Modelo: Amazon Nova Pro
+- [x] 4 Action Groups: consultar-obd, predecir-evento, buscar-patrones-historicos, generar-recomendacion
+- [ ] **⚠️ PENDIENTE: Asociar Knowledge Base `4OAVLRB8VI`**
 - [ ] Probar con preguntas de demo
 
-### BLOQUE 3 — SageMaker (1-2 horas, o confirmar fallback)
-> **Decisión:** Si no hay tiempo, el fallback heurístico en Lambda es suficiente para la demo.
-> **C-008:** Entrenamiento solo con datos oct-dic 2020. Enero 2021 reservado para simulación.
-
-- [ ] Opción A: Ejecutar `sagemaker/01-feature-engineering-and-training.py` en SageMaker Studio
-  - El script filtra automáticamente datos < 2021-01-01 para entrenamiento
-  - Entrena XGBoost y despliega endpoint `ado-prediccion-eventos`
-- [ ] Opción B: Confirmar que el fallback heurístico funciona correctamente
-- [ ] Probar `tool-predecir-evento` end-to-end
+### BLOQUE 3 — SageMaker ✅ COMPLETADO
+- [x] Modelo XGBoost entrenado con datos oct-dic 2020 (C-008)
+- [x] Endpoint `ado-prediccion-eventos` desplegado y en InService
+- [x] 128 features, test de predicción exitoso
+- [x] Lambda `tool-predecir-evento` apunta al endpoint correcto
 
 ### BLOQUE 4 — Dashboard + Demo (2 horas)
 > **Objetivo:** Demo completa funcionando de punta a punta.
