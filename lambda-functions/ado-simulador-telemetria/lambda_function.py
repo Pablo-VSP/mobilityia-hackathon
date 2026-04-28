@@ -3,7 +3,13 @@ ado-simulador-telemetria — Simulador de telemetría en tiempo real.
 
 Lee viajes pre-procesados desde S3 (viajes_consolidados.json) y simula
 múltiples buses avanzando simultáneamente por sus rutas con desfase
-temporal. Cada invocación escribe un frame por bus en DynamoDB.
+temporal.
+
+Modo burst: cada invocación (trigger cada 1 minuto via EventBridge)
+genera BURST_COUNT registros por bus, espaciados TICK_INTERVAL segundos
+entre sí. Con los defaults (6 ticks × 10s = 60s) se cubren los 60
+segundos entre invocaciones, logrando resolución efectiva de 10 segundos
+en DynamoDB sin necesidad de triggers sub-minuto.
 
 Los viajes se reproducen en loop: cuando un bus llega al final de su
 viaje, reinicia desde el frame 0.
@@ -18,7 +24,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 
 import boto3
@@ -42,13 +48,19 @@ S3_VIAJES_KEY = os.environ.get(
 )
 DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "ado-telemetria-live")
 
-# How many seconds of trip time each Lambda invocation advances.
-# At rate(10 seconds) trigger, STEP=30 means 3x speedup (5h trip in ~1.7h).
+# How many seconds of trip time each tick advances.
+# With TICK_INTERVAL=10 and STEP_SECONDS=30, each 10s real tick
+# advances 30s of trip time → 3x speedup.
 STEP_SECONDS = int(os.environ.get("STEP_SECONDS", "30"))
 
 # Desfase entre buses: bus 0 starts at 0%, bus 1 at DESFASE%, bus 2 at 2*DESFASE%
 # 15% means ~45 min apart on a 5h trip
 DESFASE_PCT = int(os.environ.get("DESFASE_PCT", "15"))
+
+# Burst mode: how many ticks to emit per invocation and interval between them.
+# 6 ticks × 10s = 60s → covers the full minute between EventBridge triggers.
+BURST_COUNT = int(os.environ.get("BURST_COUNT", "6"))
+TICK_INTERVAL = int(os.environ.get("TICK_INTERVAL", "10"))
 
 # ---------------------------------------------------------------------------
 # Cached data loaders
@@ -116,7 +128,7 @@ def _get_frame_for_bus(viaje: dict, bus_index: int, ahora: float) -> dict:
     Args:
         viaje: Trip dict with "frames" and "duracion_segundos".
         bus_index: Index of this bus (0, 1, 2...) for desfase calculation.
-        ahora: Current unix timestamp.
+        ahora: Current unix timestamp (may be offset for burst ticks).
 
     Returns:
         The frame dict for this bus at this moment.
@@ -132,8 +144,9 @@ def _get_frame_for_bus(viaje: dict, bus_index: int, ahora: float) -> dict:
     desfase_segundos = int(duracion * (DESFASE_PCT / 100.0) * bus_index)
 
     # Elapsed seconds in the simulation (with speedup via STEP_SECONDS)
-    # We use wall clock time so the simulation is stateless
-    elapsed = (int(ahora) * STEP_SECONDS // 10) + desfase_segundos
+    # We use wall clock time so the simulation is stateless.
+    # ahora is divided by TICK_INTERVAL to normalize the tick rate.
+    elapsed = (int(ahora) * STEP_SECONDS // TICK_INTERVAL) + desfase_segundos
 
     # Position in the trip (looping)
     posicion_en_viaje = elapsed % duracion
@@ -257,20 +270,22 @@ def _build_dynamo_item(viaje: dict, frame: dict, catalogo_spn: dict, timestamp_i
 # ---------------------------------------------------------------------------
 
 def lambda_handler(event, context):
-    """Simulate real-time telemetry for multiple buses.
+    """Simulate real-time telemetry for multiple buses (burst mode).
 
-    Each invocation:
+    Each invocation (triggered every 1 minute by EventBridge Scheduler):
       1. Loads consolidated trips from S3 (cached).
       2. Loads SPN catalog (cached).
-      3. For each trip/bus, selects the current frame based on wall clock
-         time + per-bus desfase.
-      4. Builds DynamoDB items with pivoted SPNs, alerts, consumption state.
-      5. Batch writes all items to DynamoDB.
+      3. Generates BURST_COUNT ticks (default 6), each separated by
+         TICK_INTERVAL seconds (default 10s), covering the full minute.
+      4. For each tick × bus, selects the frame and builds a DynamoDB item
+         with a distinct timestamp.
+      5. Batch writes all items to DynamoDB in one go.
 
-    Designed to be triggered by EventBridge Scheduler at rate(10 seconds).
+    Result: DynamoDB has records every ~10 seconds even though the Lambda
+    only runs once per minute.
     """
     ahora = time.time()
-    timestamp_iso = datetime.now(timezone.utc).isoformat()
+    base_dt = datetime.now(timezone.utc)
     ttl = int(ahora) + 86400
 
     # --- 1. Load trips ---
@@ -297,35 +312,46 @@ def lambda_handler(event, context):
         }))
         return {"statusCode": 200, "body": json.dumps({"status": "error", "reason": str(exc)})}
 
-    # --- 3. Process each bus ---
-    items = []
-    for bus_index, viaje in enumerate(viajes):
-        try:
-            frame = _get_frame_for_bus(viaje, bus_index, ahora)
-            item = _build_dynamo_item(viaje, frame, catalogo_spn, timestamp_iso, ttl)
-            items.append(item)
-        except Exception as exc:
-            logger.warning(json.dumps({
-                "action": "process_bus",
-                "bus": viaje.get("autobus", "?"),
-                "error": str(exc),
-            }))
+    # --- 3. Generate burst ticks ---
+    all_items = []
+    for tick in range(BURST_COUNT):
+        # Simulate wall-clock time for this tick
+        tick_time = ahora + (tick * TICK_INTERVAL)
+        tick_dt = base_dt + timedelta(seconds=tick * TICK_INTERVAL)
+        tick_ts = tick_dt.isoformat()
 
-    # --- 4. Write to DynamoDB ---
+        for bus_index, viaje in enumerate(viajes):
+            try:
+                frame = _get_frame_for_bus(viaje, bus_index, tick_time)
+                item = _build_dynamo_item(
+                    viaje, frame, catalogo_spn, tick_ts, ttl,
+                )
+                all_items.append(item)
+            except Exception as exc:
+                logger.warning(json.dumps({
+                    "action": "process_bus",
+                    "bus": viaje.get("autobus", "?"),
+                    "tick": tick,
+                    "error": str(exc),
+                }))
+
+    # --- 4. Write all items to DynamoDB ---
     write_result = {}
-    if items:
+    if all_items:
         try:
-            write_result = batch_write_items(DYNAMODB_TABLE, items)
+            write_result = batch_write_items(DYNAMODB_TABLE, all_items)
         except Exception as exc:
             logger.error(json.dumps({
                 "action": "batch_write",
                 "error": str(exc),
-                "items_count": len(items),
+                "items_count": len(all_items),
             }))
 
     # --- 5. Log summary ---
+    # Log only the last tick's state for brevity
+    last_tick_items = all_items[-(len(viajes)):]  if all_items else []
     buses_info = []
-    for item in items:
+    for item in last_tick_items:
         buses_info.append({
             "autobus": item["autobus"],
             "estado": item["estado_consumo"],
@@ -336,10 +362,13 @@ def lambda_handler(event, context):
 
     resumen = {
         "action": "simulador_summary",
-        "timestamp": timestamp_iso,
-        "buses_simulados": len(items),
+        "timestamp": base_dt.isoformat(),
+        "burst_count": BURST_COUNT,
+        "tick_interval_s": TICK_INTERVAL,
+        "buses_por_tick": len(viajes),
+        "total_items": len(all_items),
         "items_escritos": write_result.get("items_written", 0),
-        "buses": buses_info,
+        "buses_ultimo_tick": buses_info,
     }
     logger.info(json.dumps(resumen, default=str))
 
@@ -347,7 +376,9 @@ def lambda_handler(event, context):
         "statusCode": 200,
         "body": json.dumps({
             "status": "success",
-            "buses_simulados": len(items),
+            "burst_count": BURST_COUNT,
+            "buses_por_tick": len(viajes),
+            "total_items": len(all_items),
             "items_escritos": write_result.get("items_written", 0),
         }),
     }
