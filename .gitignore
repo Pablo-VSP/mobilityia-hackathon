@@ -41,5 +41,9 @@ logs/
 
 # Data — archivos pesados (descargar manualmente desde carpeta compartida en la nube)
 data/consolidated_telemetry.parquet
+*.parquet
+sample_parquets/
+sample_data.parquet
+rutas_viajes.html
 dashboard/node_modules/
 dashboard/dist/
