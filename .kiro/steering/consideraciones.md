@@ -89,6 +89,19 @@ En lugar de ello debe mencionar mejoras en lenguaje difuso tal que "Aumento", "M
 
 ## 🕐 CONSIDERACIONES PENDIENTES DE APLICAR
 *(Todas aplicadas — C-005, C-006 y C-007 integradas en steering files el 2026-04-27)*
+
+### C-008 — Partición temporal de datos: entrenamiento vs simulación en tiempo real
+- **Fecha:** 2026-04-27
+- **Estado:** ✅ Activa
+- **Descripción:** Los datos en S3 cubren 4 meses (octubre 2020 – enero 2021). Se establece la siguiente partición:
+  - **Entrenamiento del modelo ML (SageMaker):** Solo datos de **octubre, noviembre y diciembre 2020**
+  - **Simulación en tiempo real (Lambda simulador):** Solo datos de **enero 2021** — estos se inyectan en DynamoDB como si fueran "ahora" durante la demo
+- **Impacto:**
+  - El script de feature engineering debe filtrar `evento_fecha < 2021-01-01` para entrenamiento
+  - El Lambda simulador debe leer solo datos de enero 2021 de S3 para inyectar en DynamoDB
+  - Esto evita data leakage: el modelo nunca ve los datos que se usarán en la demo
+  - Los 3 meses de entrenamiento dan suficiente historial para calcular ventanas de 7 días y target de 14 días
+  - Enero 2021 simula el "presente" donde los agentes de AgentCore analizan y generan recomendaciones
 ---
 
 ## 📝 PLANTILLA PARA NUEVA CONSIDERACIÓN

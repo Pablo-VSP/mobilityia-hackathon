@@ -3,6 +3,7 @@
 
 > **C-004:** Datos simulados. **C-003:** Sin métricas numéricas específicas en respuestas al usuario.
 > **C-007:** Solo fallas con `severidad_inferencia = 3` son el target del modelo.
+> **C-008:** Entrenamiento con oct-dic 2020. Enero 2021 reservado para simulación en tiempo real.
 > **Región:** us-east-2. **Profile:** mobilityadods. **Bucket:** ado-telemetry-mvp.
 
 ---
@@ -55,7 +56,8 @@ s3://ado-telemetry-mvp/hackathon-data/raw/travel_telemetry/
     travel_telemetry_000000000000.parquet ... travel_telemetry_000000001338.parquet
 ```
 - **1,339 archivos Parquet**, ~447 MB total
-- Muchos archivos son vacíos (~2.5KB), los con datos van de 100KB a 4.9MB
+- Rango temporal: octubre 2020 – enero 2021
+- **C-008:** Para entrenamiento solo se usan oct-dic 2020. Enero 2021 se reserva para simulación en tiempo real.
 - Estructura: 1 fila = 1 lectura de 1 SPN (hay que pivotar)
 
 | Campo | Tipo | Rol |
@@ -75,6 +77,7 @@ s3://ado-telemetry-mvp/hackathon-data/raw/data_fault/
     data_fault_000000000000.parquet ... data_fault_000000000122.parquet
 ```
 - **123 archivos Parquet**, ~6.5 MB total
+- **C-008:** Para entrenamiento solo se usan fallas de oct-dic 2020. Fallas de enero 2021 se reservan para simulación.
 
 | Campo | Tipo | Rol |
 |---|---|---|
@@ -103,8 +106,13 @@ s3://ado-telemetry-mvp/hackathon-data/raw/motor_spn/
 # Códigos de falla con severidad_inferencia = 3
 CODIGOS_CRITICOS = {'100', '158', '86'}
 
-# Filtrar data_fault para solo incluir fallas críticas
-fallas_criticas = fallas[fallas['codigo'].isin(CODIGOS_CRITICOS)]
+# C-008: Filtrar solo datos de entrenamiento (oct-dic 2020)
+FECHA_CORTE_ENTRENAMIENTO = pd.Timestamp("2021-01-01")
+fallas_entrenamiento = fallas[fallas['fecha_hora'] < FECHA_CORTE_ENTRENAMIENTO]
+telemetria_entrenamiento = telemetria[telemetria['evento_fecha'] < FECHA_CORTE_ENTRENAMIENTO]
+
+# Filtrar fallas críticas dentro del periodo de entrenamiento
+fallas_criticas = fallas_entrenamiento[fallas_entrenamiento['codigo'].isin(CODIGOS_CRITICOS)]
 ```
 
 ### 3.2 Unidad de observación
@@ -153,14 +161,15 @@ Para cada uno de los **19 SPNs de mantenimiento**, calcular sobre ventana de 7 d
 | `total_spns_fuera_rango` | Conteo total de SPNs fuera de rango |
 | `total_anomalias` | Conteo total de variaciones anómalas |
 
-### 3.6 Variable Target (acotada a C-007)
+### 3.6 Variable Target (acotada a C-007 y C-008)
 
 ```python
-# Para cada (autobus, fecha_corte):
+# Para cada (autobus, fecha_corte) donde fecha_corte < 2021-01-01:
 # Buscar en data_fault si existe alguna falla con:
 #   autobus == autobus
 #   AND codigo IN ('100', '158', '86')  ← solo severidad_inferencia = 3
 #   AND fecha_hora BETWEEN fecha_corte AND fecha_corte + 14 días
+#   AND fecha_hora < 2021-01-01  ← no usar datos de enero 2021
 # Si existe → falla_critica_14d = 1
 # Si no    → falla_critica_14d = 0
 ```
