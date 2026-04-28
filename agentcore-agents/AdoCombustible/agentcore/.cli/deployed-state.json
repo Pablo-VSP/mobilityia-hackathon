@@ -1,0 +1,16 @@
+{
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "AdoCombustible": {
+            "runtimeId": "AdoCombustible_AdoCombustible-BJ7Uvb4ozE",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-2:084032333314:runtime/AdoCombustible_AdoCombustible-BJ7Uvb4ozE",
+            "roleArn": "arn:aws:iam::084032333314:role/AgentCore-AdoCombustible--ApplicationAgentAdoCombus-CpwDD9Y0ilqG"
+          }
+        },
+        "stackName": "AgentCore-AdoCombustible-default"
+      }
+    }
+  }
+}

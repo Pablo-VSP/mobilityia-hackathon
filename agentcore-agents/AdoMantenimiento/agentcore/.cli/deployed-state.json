@@ -1,0 +1,16 @@
+{
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "AdoMantenimiento": {
+            "runtimeId": "AdoMantenimiento_AdoMantenimiento-2sL9qkC3yK",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-2:084032333314:runtime/AdoMantenimiento_AdoMantenimiento-2sL9qkC3yK",
+            "roleArn": "arn:aws:iam::084032333314:role/AgentCore-AdoMantenimient-ApplicationAgentAdoManten-mQaT2xJEp4Dd"
+          }
+        },
+        "stackName": "AgentCore-AdoMantenimiento-default"
+      }
+    }
+  }
+}

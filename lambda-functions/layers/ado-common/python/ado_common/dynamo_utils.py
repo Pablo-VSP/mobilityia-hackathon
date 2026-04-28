@@ -14,9 +14,21 @@ eventos en formato JSON estructurado para CloudWatch (Req 11.3).
 
 import json
 import logging
+from decimal import Decimal
 
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
+
+
+def _convert_floats(obj):
+    """Recursively convert float values to Decimal for DynamoDB compatibility."""
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    elif isinstance(obj, dict):
+        return {k: _convert_floats(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_floats(i) for i in obj]
+    return obj
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -103,7 +115,7 @@ def batch_write_items(table_name: str, items: list[dict]) -> dict:
 
             with table.batch_writer() as writer:
                 for item in batch:
-                    writer.put_item(Item=item)
+                    writer.put_item(Item=_convert_floats(item))
 
             items_written += len(batch)
 
@@ -144,7 +156,7 @@ def put_item(table_name: str, item: dict) -> dict:
     """
     try:
         table = _get_table(table_name)
-        response = table.put_item(Item=item)
+        response = table.put_item(Item=_convert_floats(item))
 
         logger.info(json.dumps({
             "action": "put_item",
