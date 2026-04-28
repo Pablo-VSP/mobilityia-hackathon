@@ -238,6 +238,7 @@ export default function MapPage() {
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [selectedBus, setSelectedBus] = useState<string | null>(null);
   const [chatBus, setChatBus] = useState<{ id: string; context?: string } | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const busCache = useRef<Map<string, Bus>>(new Map());
 
@@ -247,7 +248,6 @@ export default function MapPage() {
         fetchFlotaStatus(),
         fetchAlertasActivas(),
       ]);
-      // Merge new data into cache — keep last known state for buses that disappear
       for (const bus of flota.buses) {
         busCache.current.set(bus.autobus, bus);
       }
@@ -272,11 +272,111 @@ export default function MapPage() {
 
   const openChat = (autobus: string, context?: string) => {
     setChatBus({ id: autobus, context });
+    setPanelOpen(true);
   };
 
+  const panelContent = chatBus ? (
+    <InlineChat
+      busId={chatBus.id}
+      context={chatBus.context}
+      onClose={() => { setChatBus(null); setPanelOpen(false); }}
+    />
+  ) : (
+    <>
+      <div className="p-4 border-b border-slate-800">
+        <h2 className="text-white font-bold flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-400" />
+          Vehículos con Alertas
+        </h2>
+        <p className="text-slate-400 text-xs mt-1">
+          {busesWithAlerts.length} vehículo(s) requieren atención
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+        {busesWithAlerts.length === 0 && (
+          <div className="text-center text-slate-500 py-8">
+            <p className="text-sm">Todos los vehículos operan con normalidad</p>
+          </div>
+        )}
+
+        {busesWithAlerts.map(bus => (
+          <div
+            key={bus.autobus}
+            className={`p-3 rounded-xl border transition-colors cursor-pointer ${
+              selectedBus === bus.autobus
+                ? 'bg-slate-700/50 border-red-500/50'
+                : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+            }`}
+            onClick={() => setSelectedBus(bus.autobus)}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-white font-bold">Bus {bus.autobus}</span>
+              <StatusBadge status={bus.estado_consumo} />
+            </div>
+            <p className="text-slate-400 text-xs truncate">{bus.viaje_ruta}</p>
+            <p className="text-slate-500 text-xs">{bus.operador_desc || '—'}</p>
+
+            {bus.spns_fuera_de_rango > 0 && (
+              <p className="text-amber-400 text-xs mt-1">
+                ⚠ {bus.spns_fuera_de_rango} señal(es) fuera de rango
+              </p>
+            )}
+
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                const alertMsgs = bus.alertas_spn.map(a => a.mensaje).join('; ');
+                openChat(bus.autobus, alertMsgs || undefined);
+              }}
+              className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 bg-slate-700 hover:bg-red-600 text-slate-300 hover:text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              <MessageSquare className="w-3 h-3" />
+              Consultar Agente
+            </button>
+          </div>
+        ))}
+
+        {alertas.length > 0 && (
+          <>
+            <div className="pt-3 pb-1 px-1">
+              <h3 className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                Alertas de Mantenimiento
+              </h3>
+            </div>
+            {alertas.map(alerta => (
+              <div
+                key={alerta.alerta_id}
+                className="p-3 rounded-xl bg-red-500/5 border border-red-500/20"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-white font-bold text-sm">Bus {alerta.autobus}</span>
+                  <StatusBadge status={alerta.nivel_riesgo} />
+                </div>
+                <p className="text-slate-300 text-xs">{alerta.diagnostico}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-slate-500 text-xs">{alerta.numero_referencia}</span>
+                  <span className="text-slate-600">·</span>
+                  <span className="text-amber-400 text-xs">{alerta.urgencia.replace(/_/g, ' ')}</span>
+                </div>
+                <button
+                  onClick={() => openChat(alerta.autobus, `Tiene alerta ${alerta.nivel_riesgo}: ${alerta.diagnostico}`)}
+                  className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  <MessageSquare className="w-3 h-3" />
+                  Preguntar sobre esta alerta
+                </button>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </>
+  );
+
   return (
-    <div className="flex h-full">
-      {/* Map */}
+    <div className="flex flex-col md:flex-row h-full relative">
+      {/* Map — full screen */}
       <div className="flex-1 relative">
         <MapContainer
           center={config.map.center}
@@ -296,149 +396,78 @@ export default function MapPage() {
           ))}
         </MapContainer>
 
-        {/* Top-left stats overlay */}
-        <div className="absolute top-4 left-4 z-[1000] bg-slate-900/90 backdrop-blur rounded-xl p-4 border border-slate-700">
-          <h2 className="text-white font-bold text-sm mb-2 flex items-center gap-2">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Flota en Tiempo Real
+        {/* Stats overlay — compact on mobile */}
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 z-[1000] bg-slate-900/90 backdrop-blur rounded-xl p-2 md:p-4 border border-slate-700">
+          <h2 className="text-white font-bold text-xs md:text-sm mb-1 md:mb-2 flex items-center gap-1 md:gap-2">
+            <RefreshCw className={`w-3 h-3 md:w-4 md:h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Flota en Tiempo Real</span>
+            <span className="sm:hidden">Flota</span>
           </h2>
-          <div className="flex gap-3 text-xs">
+          <div className="flex gap-2 md:gap-3 text-[10px] md:text-xs">
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">{buses.length}</p>
+              <p className="text-lg md:text-2xl font-bold text-white">{buses.length}</p>
               <p className="text-slate-400">Total</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-emerald-400">
+              <p className="text-lg md:text-2xl font-bold text-emerald-400">
                 {buses.filter(b => b.estado_consumo === 'EFICIENTE').length}
               </p>
-              <p className="text-slate-400">Eficientes</p>
+              <p className="text-slate-400">OK</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-amber-400">
+              <p className="text-lg md:text-2xl font-bold text-amber-400">
                 {buses.filter(b => b.estado_consumo === 'ALERTA_MODERADA').length}
               </p>
-              <p className="text-slate-400">Moderada</p>
+              <p className="text-slate-400">Mod</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-red-400">
+              <p className="text-lg md:text-2xl font-bold text-red-400">
                 {buses.filter(b => b.estado_consumo === 'ALERTA_SIGNIFICATIVA').length}
               </p>
               <p className="text-slate-400">Alerta</p>
             </div>
-            {buses.some(b => b.estado_consumo === 'SIN_DATOS') && (
-              <div className="text-center">
-                <p className="text-2xl font-bold text-slate-400">
-                  {buses.filter(b => b.estado_consumo === 'SIN_DATOS').length}
-                </p>
-                <p className="text-slate-400">Sin datos</p>
-              </div>
-            )}
           </div>
         </div>
-      </div>
 
-      {/* Right panel — Chat or Alerts */}
-      <div className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">
-        {chatBus ? (
-          <InlineChat
-            busId={chatBus.id}
-            context={chatBus.context}
-            onClose={() => setChatBus(null)}
-          />
-        ) : (
-          <>
-            <div className="p-4 border-b border-slate-800">
-              <h2 className="text-white font-bold flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
-                Vehículos con Alertas
-              </h2>
-              <p className="text-slate-400 text-xs mt-1">
-                {busesWithAlerts.length} vehículo(s) requieren atención
-              </p>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
-              {busesWithAlerts.length === 0 && (
-                <div className="text-center text-slate-500 py-8">
-                  <p className="text-sm">Todos los vehículos operan con normalidad</p>
-                </div>
-              )}
-
-              {busesWithAlerts.map(bus => (
-                <div
-                  key={bus.autobus}
-                  className={`p-3 rounded-xl border transition-colors cursor-pointer ${
-                    selectedBus === bus.autobus
-                      ? 'bg-slate-700/50 border-red-500/50'
-                      : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
-                  }`}
-                  onClick={() => setSelectedBus(bus.autobus)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white font-bold">Bus {bus.autobus}</span>
-                    <StatusBadge status={bus.estado_consumo} />
-                  </div>
-                  <p className="text-slate-400 text-xs truncate">{bus.viaje_ruta}</p>
-                  <p className="text-slate-500 text-xs">{bus.operador_desc || '—'}</p>
-
-                  {bus.spns_fuera_de_rango > 0 && (
-                    <p className="text-amber-400 text-xs mt-1">
-                      ⚠ {bus.spns_fuera_de_rango} señal(es) fuera de rango
-                    </p>
-                  )}
-
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      const alertMsgs = bus.alertas_spn.map(a => a.mensaje).join('; ');
-                      openChat(bus.autobus, alertMsgs || undefined);
-                    }}
-                    className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 bg-slate-700 hover:bg-red-600 text-slate-300 hover:text-white text-xs font-medium rounded-lg transition-colors"
-                  >
-                    <MessageSquare className="w-3 h-3" />
-                    Consultar Agente
-                  </button>
-                </div>
-              ))}
-
-              {/* Active alerts section */}
-              {alertas.length > 0 && (
-                <>
-                  <div className="pt-3 pb-1 px-1">
-                    <h3 className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                      Alertas de Mantenimiento
-                    </h3>
-                  </div>
-                  {alertas.map(alerta => (
-                    <div
-                      key={alerta.alerta_id}
-                      className="p-3 rounded-xl bg-red-500/5 border border-red-500/20"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-white font-bold text-sm">Bus {alerta.autobus}</span>
-                        <StatusBadge status={alerta.nivel_riesgo} />
-                      </div>
-                      <p className="text-slate-300 text-xs">{alerta.diagnostico}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-slate-500 text-xs">{alerta.numero_referencia}</span>
-                        <span className="text-slate-600">·</span>
-                        <span className="text-amber-400 text-xs">{alerta.urgencia.replace(/_/g, ' ')}</span>
-                      </div>
-                      <button
-                        onClick={() => openChat(alerta.autobus, `Tiene alerta ${alerta.nivel_riesgo}: ${alerta.diagnostico}`)}
-                        className="mt-2 w-full flex items-center justify-center gap-1 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-medium rounded-lg transition-colors"
-                      >
-                        <MessageSquare className="w-3 h-3" />
-                        Preguntar sobre esta alerta
-                      </button>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          </>
+        {/* Mobile: FAB to open panel */}
+        {!panelOpen && (
+          <button
+            onClick={() => setPanelOpen(true)}
+            className="md:hidden absolute bottom-4 right-4 z-[1000] w-14 h-14 bg-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-600/30"
+          >
+            <AlertTriangle className="w-6 h-6 text-white" />
+            {busesWithAlerts.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                {busesWithAlerts.length}
+              </span>
+            )}
+          </button>
         )}
       </div>
+
+      {/* Desktop: side panel (always visible) */}
+      <div className="hidden md:flex w-80 bg-slate-900 border-l border-slate-800 flex-col shrink-0">
+        {panelContent}
+      </div>
+
+      {/* Mobile: bottom sheet */}
+      {panelOpen && (
+        <div className="md:hidden absolute inset-x-0 bottom-0 z-[1001] flex flex-col bg-slate-900 border-t border-slate-700 rounded-t-2xl max-h-[70vh] shadow-2xl animate-slide-up">
+          {/* Drag handle + close */}
+          <div className="flex items-center justify-center pt-2 pb-1 shrink-0">
+            <div className="w-10 h-1 bg-slate-600 rounded-full" />
+          </div>
+          <button
+            onClick={() => { setPanelOpen(false); setChatBus(null); }}
+            className="absolute top-2 right-3 text-slate-400 hover:text-white z-10"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            {panelContent}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

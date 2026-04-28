@@ -84,3 +84,17 @@ body {
   animation: blink 1s infinite;
   color: var(--ado-red);
 }
+
+/* Mobile bottom sheet slide-up animation */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Safe area for bottom nav (notch devices) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
