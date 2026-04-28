@@ -132,11 +132,13 @@ hackathon-data/
 |---|---|
 | Endpoint | `ado-prediccion-eventos` |
 | Estado | InService |
-| Modelo | XGBoost 1.7 |
-| Features | 128 (114 telemetría + 9 fallas + 5 contextuales) |
+| Modelo | XGBoost 1.7 (v2 optimizado) |
+| Features | 54 (40 telemetría + 6 umbrales + 2 contextuales + 6 fallas) |
+| SPNs clave | 10 (enfocados en fallas 100, 158, 86) |
 | Instancia | `ml.m5.large` |
-| AUC-ROC | 0.969 |
-| Target | `evento_14_dias` (falla con severidad ≥ 2 en 14 días) |
+| Training job | `sagemaker-xgboost-2026-04-28-05-58-45-775` |
+| Feature names | `s3://ado-telemetry-mvp/hackathon-data/modelos/sagemaker-v2/training-data/feature_names.json` |
+| Enfoque | Ventana 7 días, 10 SPNs clave, umbrales del manual de mantenimiento |
 
 ### Umbrales de riesgo ML
 | Score | Nivel | Urgencia |
