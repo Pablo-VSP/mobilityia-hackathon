@@ -151,6 +151,8 @@ def _extract_bus_summary(record):
         "operador": record.get("operador_desc", ""),
         "ultimo_timestamp": record.get("timestamp", ""),
         "estado_consumo": record.get("estado_consumo", "SIN_DATOS"),
+        "latitud": float(record.get("latitud", 0) or 0),
+        "longitud": float(record.get("longitud", 0) or 0),
         "alertas_spn_count": alertas_count,
         "spns_fuera_de_rango": spns_fuera_de_rango,
         "alertas_resumen": alertas_resumen,

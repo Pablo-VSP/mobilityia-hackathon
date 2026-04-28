@@ -110,6 +110,23 @@ def buscar_patrones_historicos(codigo: str, modelo: str = "", marca_comercial: s
 
 
 @tool
+def consultar_alertas_existentes(autobus: str = "") -> str:
+    """Consulta alertas/tickets activos para un autobús específico o toda la flota.
+
+    IMPORTANTE: Usa esta herramienta ANTES de generar_recomendacion para verificar
+    si ya existe un ticket activo para el autobús. Si ya hay un ticket, NO generes
+    uno nuevo — en su lugar, describe el ticket existente al usuario.
+
+    Args:
+        autobus: Número económico del autobús (ej: 7309). Vacío para ver todos.
+    """
+    params = []
+    if autobus:
+        params.append({"name": "autobus", "value": str(autobus)})
+    return json.dumps(_invoke_lambda("tool-consultar-alertas", params), ensure_ascii=False, default=str)
+
+
+@tool
 def generar_recomendacion(autobus: str, diagnostico: str, nivel_riesgo: str, urgencia: str, componentes: str) -> str:
     """Genera recomendación preventiva de mantenimiento y la registra.
 
@@ -138,19 +155,44 @@ HERRAMIENTAS:
 1. consultar_obd — Señales de diagnóstico, tendencias, balatas, fallas
 2. predecir_evento — Predicción de riesgo de evento mecánico
 3. buscar_patrones_historicos — Patrones en historial de fallas
-4. generar_recomendacion — Crear recomendación preventiva formal
-5. consultar_knowledge_base — Buscar info técnica: SPNs, códigos de falla, patrones, NOM-044
+4. consultar_alertas_existentes — Ver tickets/alertas activas de un bus (USAR SIEMPRE ANTES de generar_recomendacion)
+5. generar_recomendacion — Crear recomendación preventiva formal (SOLO si no hay ticket existente)
+6. consultar_knowledge_base — Buscar info técnica: SPNs, códigos de falla, patrones, NOM-044
+
+FLUJO OBLIGATORIO PARA ANÁLISIS DE UN BUS:
+1. Primero: consultar_alertas_existentes(autobus) para ver si ya hay tickets
+2. Si YA hay tickets activos para ese bus:
+   - NO uses generar_recomendacion
+   - Describe los tickets existentes al usuario con sus detalles
+   - Complementa con datos de consultar_obd y predecir_evento para dar contexto adicional
+3. Si NO hay tickets activos y el riesgo es moderado o superior:
+   - Entonces sí usa generar_recomendacion para crear un nuevo ticket
+
+FORMATO DE RESPUESTA — SÉ DETALLADO Y VISUAL:
+- Incluye los VALORES REALES de los sensores: temperatura motor, presión aceite, voltaje, niveles, etc.
+- Usa tablas markdown para presentar señales de mantenimiento. Ejemplo:
+
+| Señal | Valor Actual | Rango Normal | Tendencia | Estado |
+|-------|-------------|--------------|-----------|--------|
+| Temp. Motor | 128°C | 0-150°C | ↑ Ascendente | ⚠ Vigilar |
+| Presión Aceite | 95 kPa | 0-1000 kPa | ↓ Descendente | ⚠ Bajo |
+
+- Muestra el estado de balatas con porcentajes reales
+- Incluye el resultado de la predicción ML: nivel de riesgo y factores contribuyentes
+- Si hay fallas recientes, lista los códigos con su descripción y severidad
+- Cuando describas un ticket existente, incluye todos sus campos: referencia, diagnóstico, componentes, urgencia
 
 REGLAS:
 - Responde en español latinoamericano
-- NUNCA menciones probabilidades numéricas
+- Puedes mostrar valores de sensores, lecturas y resultados de predicción — eso es información operativa
+- Lo que NO debes hacer es inventar probabilidades numéricas de falla (no digas "87% de probabilidad")
 - Usa: alta probabilidad, patrón consistente con, señales asociadas a
-- Genera recomendación cuando riesgo sea moderado o superior
+- NUNCA generes un ticket duplicado — siempre verifica primero con consultar_alertas_existentes
 - Usa consultar_knowledge_base para contexto técnico sobre códigos, SPNs o normas
-- Usa las herramientas antes de responder
+- Siempre termina con una recomendación concreta y accionable
 """
 
-tools = [consultar_obd, predecir_evento, buscar_patrones_historicos, generar_recomendacion, consultar_knowledge_base]
+tools = [consultar_obd, predecir_evento, buscar_patrones_historicos, consultar_alertas_existentes, generar_recomendacion, consultar_knowledge_base]
 _agent = None
 
 

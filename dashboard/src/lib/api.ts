@@ -88,12 +88,44 @@ export interface ResumenConsumo {
   rutas: RutaResumen[];
 }
 
+export interface CO2BusIndicador {
+  autobus: string;
+  operador: string;
+  ruta: string;
+  rendimiento_promedio_kml: number;
+  co2_estimado_por_viaje_kg: number;
+  co2_referencia_por_viaje_kg: number;
+  co2_por_km_kg: number;
+  clasificacion_ambiental: string;
+  tendencia: string;
+}
+
+export interface CO2Flota {
+  buses_activos: number;
+  rendimiento_promedio_kml: number;
+  co2_promedio_por_km_kg: number;
+  co2_total_estimado_kg: number;
+  co2_total_referencia_kg: number;
+  ahorro_potencial_co2_kg: number;
+  distribucion_ambiental: Record<string, number>;
+  descripcion: string;
+}
+
 export interface CO2Estimado {
   titulo: string;
-  descripcion_general: string;
-  areas_de_impacto: { area: string; descripcion: string; nivel_impacto: string }[];
-  cumplimiento_normativo: string;
-  nota: string;
+  factor_co2: string;
+  rendimiento_referencia_kml: number;
+  distancia_ruta_km: number;
+  co2_referencia_por_viaje_kg: number;
+  flota: CO2Flota;
+  buses: CO2BusIndicador[];
+  cumplimiento_normativo: {
+    nom_044: string;
+    acuerdo_paris: string;
+  };
+  // Legacy fields (may not be present in new API)
+  estado?: string;
+  mensaje?: string;
 }
 
 export interface ChatResponse {

@@ -253,29 +253,8 @@ def handler_streaming(event, response_stream, context):
 # Standard handler (for API Gateway — non-streaming fallback)
 # ---------------------------------------------------------------------------
 
-def lambda_handler(event, context):
-    """Non-streaming handler for API Gateway requests."""
-    prompt, agente, status = _parse_request(event)
-
-    if status == "OPTIONS":
-        return _json_response({})
-    if status == "INVALID_JSON":
-        return _json_response({"error": "JSON inválido"}, 400)
-    if not prompt:
-        return _json_response({"error": "prompt requerido"}, 400)
-
-    runtime_arn = (
-        RUNTIME_ARN_COMBUSTIBLE if agente == "combustible"
-        else RUNTIME_ARN_MANTENIMIENTO
-    )
-    session_id = f"chat-{uuid.uuid4().hex[:24]}-dashboard"
-
-    logger.info(json.dumps({
-        "action": "chat_request",
-        "agente": agente,
-        "prompt_length": len(prompt),
-    }))
-
+def _invoke_single_agent(runtime_arn, prompt, session_id):
+    """Invoke a single AgentCore agent and return its cleaned response text."""
     try:
         client = _get_client()
         resp = client.invoke_agent_runtime(
@@ -318,20 +297,102 @@ def lambda_handler(event, context):
                     if text:
                         chunks.append(text)
 
-        respuesta = _clean_sse_text("".join(chunks).strip())
-        if not respuesta:
-            respuesta = "El agente procesó la solicitud pero no generó una respuesta de texto."
+        return _clean_sse_text("".join(chunks).strip())
+
+    except Exception as exc:
+        logger.warning(json.dumps({
+            "action": "invoke_single_agent_error",
+            "runtime_arn": runtime_arn,
+            "error": str(exc)[:200],
+        }))
+        return ""
+
+
+def lambda_handler(event, context):
+    """Non-streaming handler for API Gateway requests.
+
+    Supports two modes:
+      - agente="combustible" or "mantenimiento" → single agent (legacy)
+      - agente="ambos" or "unified" → invoke both agents in parallel,
+        combine non-empty responses into a single reply.
+    """
+    prompt, agente, status = _parse_request(event)
+
+    if status == "OPTIONS":
+        return _json_response({})
+    if status == "INVALID_JSON":
+        return _json_response({"error": "JSON inválido"}, 400)
+    if not prompt:
+        return _json_response({"error": "prompt requerido"}, 400)
+
+    session_base = f"chat-{uuid.uuid4().hex[:24]}"
+
+    # Unified mode: invoke both agents in parallel
+    if agente in ("ambos", "unified"):
+        import concurrent.futures
+
+        logger.info(json.dumps({
+            "action": "chat_unified_request",
+            "prompt_length": len(prompt),
+        }))
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            fut_comb = executor.submit(
+                _invoke_single_agent,
+                RUNTIME_ARN_COMBUSTIBLE,
+                prompt,
+                f"{session_base}-comb",
+            )
+            fut_mant = executor.submit(
+                _invoke_single_agent,
+                RUNTIME_ARN_MANTENIMIENTO,
+                prompt,
+                f"{session_base}-mant",
+            )
+
+            resp_combustible = fut_comb.result()
+            resp_mantenimiento = fut_mant.result()
+
+        # Combine non-empty responses
+        parts = []
+        agentes_usados = []
+        if resp_combustible:
+            parts.append(f"## 🔥 Combustible\n\n{resp_combustible}")
+            agentes_usados.append("combustible")
+        if resp_mantenimiento:
+            parts.append(f"## 🔧 Mantenimiento\n\n{resp_mantenimiento}")
+            agentes_usados.append("mantenimiento")
+
+        if not parts:
+            respuesta = "Los agentes procesaron la solicitud pero no generaron respuestas de texto."
+        else:
+            respuesta = "\n\n---\n\n".join(parts)
 
         return _json_response({
             "respuesta": respuesta,
-            "agente_usado": agente,
-            "session_id": session_id,
+            "agente_usado": ",".join(agentes_usados) if agentes_usados else "ninguno",
+            "session_id": session_base,
         })
 
-    except Exception as exc:
-        return _json_response({
-            "respuesta": f"Error conectando con el agente: {str(exc)[:300]}",
-            "agente_usado": agente,
-            "session_id": session_id,
-            "error": True,
-        }, 502)
+    # Single agent mode (legacy)
+    runtime_arn = (
+        RUNTIME_ARN_COMBUSTIBLE if agente == "combustible"
+        else RUNTIME_ARN_MANTENIMIENTO
+    )
+    session_id = f"{session_base}-dashboard"
+
+    logger.info(json.dumps({
+        "action": "chat_request",
+        "agente": agente,
+        "prompt_length": len(prompt),
+    }))
+
+    respuesta = _invoke_single_agent(runtime_arn, prompt, session_id)
+    if not respuesta:
+        respuesta = "El agente procesó la solicitud pero no generó una respuesta de texto."
+
+    return _json_response({
+        "respuesta": respuesta,
+        "agente_usado": agente,
+        "session_id": session_id,
+    })

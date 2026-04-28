@@ -34,9 +34,13 @@ from functools import lru_cache
 import boto3
 
 from ado_common.spn_catalog import cargar_catalogo_spn, valor_fuera_de_rango
-from ado_common.dynamo_utils import batch_write_items
+from ado_common.dynamo_utils import batch_write_items, put_item
 from ado_common.s3_utils import read_json_from_s3
-from ado_common.constants import SPN_RENDIMIENTO, SPN_TASA_COMBUSTIBLE
+from ado_common.constants import (
+    SPN_RENDIMIENTO, SPN_TASA_COMBUSTIBLE,
+    SPN_TEMPERATURA_MOTOR, SPN_PRESION_ACEITE, SPN_NIVEL_ACEITE,
+    SPN_NIVEL_ANTICONGELANTE, SPN_VOLTAJE_BATERIA,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -270,6 +274,184 @@ def _build_dynamo_item(viaje: dict, frame: dict, catalogo_spn: dict, timestamp_i
 
 
 # ---------------------------------------------------------------------------
+# Auto-ticket generation
+# ---------------------------------------------------------------------------
+
+TABLE_ALERTAS = os.environ.get("DYNAMODB_TABLE_ALERTAS", "ado-alertas")
+_dynamodb_resource = boto3.resource("dynamodb")
+_alertas_cache: dict[str, str] = {}  # bus -> last ticket timestamp (in-memory per warm invocation)
+
+# Minimum interval between auto-tickets for the same bus (seconds)
+AUTO_TICKET_COOLDOWN = 300  # 5 minutes
+
+# SPN thresholds that trigger auto-tickets
+_AUTO_TICKET_RULES = [
+    {
+        "spn_id": str(SPN_TEMPERATURA_MOTOR),
+        "field": "temperatura_motor_c",
+        "condition": "gt",
+        "threshold": 125,
+        "componente": "sistema_refrigeracion",
+        "diagnostico": "Temperatura del motor por encima del umbral operativo seguro",
+    },
+    {
+        "spn_id": str(SPN_PRESION_ACEITE),
+        "field": "presion_aceite_kpa",
+        "condition": "lt",
+        "threshold": 120,
+        "componente": "circuito_aceite",
+        "diagnostico": "Presión de aceite del motor por debajo del umbral mínimo seguro",
+    },
+    {
+        "spn_id": str(SPN_VOLTAJE_BATERIA),
+        "field": "voltaje_bateria_v",
+        "condition": "lt",
+        "threshold": 22,
+        "componente": "sistema_electrico",
+        "diagnostico": "Voltaje de batería por debajo del umbral operativo",
+    },
+    {
+        "spn_id": str(SPN_NIVEL_ANTICONGELANTE),
+        "field": "nivel_anticongelante_pct",
+        "condition": "lt",
+        "threshold": 25,
+        "componente": "sistema_refrigeracion",
+        "diagnostico": "Nivel de anticongelante críticamente bajo",
+    },
+]
+
+
+def _check_existing_alerts(autobus: str) -> bool:
+    """Check if bus already has active alerts in DynamoDB. Returns True if alerts exist."""
+    try:
+        from boto3.dynamodb.conditions import Attr
+        table = _dynamodb_resource.Table(TABLE_ALERTAS)
+        resp = table.scan(
+            FilterExpression=Attr("estado").eq("ACTIVA") & Attr("autobus").eq(autobus),
+            Select="COUNT",
+        )
+        return resp.get("Count", 0) > 0
+    except Exception:
+        return False  # On error, assume no alerts (allow creation)
+
+
+def _generate_auto_tickets(last_tick_items: list[dict], timestamp_iso: str) -> int:
+    """Evaluate last tick items and auto-generate tickets for buses with critical conditions.
+
+    Only generates a ticket if:
+    - The bus has ALERTA_SIGNIFICATIVA status
+    - At least one critical SPN threshold is breached
+    - No active ticket exists for this bus
+    - Cooldown period has passed since last auto-ticket
+
+    Returns count of tickets created.
+    """
+    import uuid
+
+    tickets_created = 0
+    now_ts = time.time()
+
+    for item in last_tick_items:
+        autobus = item.get("autobus", "")
+        estado = item.get("estado_consumo", "")
+
+        # Only auto-ticket for significant alerts
+        if estado != "ALERTA_SIGNIFICATIVA":
+            continue
+
+        # Check cooldown
+        last_ticket_ts = _alertas_cache.get(autobus, "")
+        if last_ticket_ts:
+            try:
+                last_ts = datetime.fromisoformat(last_ticket_ts).timestamp()
+                if now_ts - last_ts < AUTO_TICKET_COOLDOWN:
+                    continue
+            except Exception:
+                pass
+
+        # Check which rules are triggered
+        triggered_rules = []
+        for rule in _AUTO_TICKET_RULES:
+            val = item.get(rule["field"])
+            if val is None:
+                continue
+            val = float(val)
+            if rule["condition"] == "gt" and val > rule["threshold"]:
+                triggered_rules.append(rule)
+            elif rule["condition"] == "lt" and val < rule["threshold"]:
+                triggered_rules.append(rule)
+
+        # Also check alertas_spn count
+        alertas_spn = item.get("alertas_spn", [])
+        if not triggered_rules and len(alertas_spn) < 3:
+            continue  # Not critical enough for auto-ticket
+
+        # Check if bus already has active alerts
+        if _check_existing_alerts(autobus):
+            _alertas_cache[autobus] = timestamp_iso  # Update cooldown
+            continue
+
+        # Build ticket
+        componentes = list({r["componente"] for r in triggered_rules})
+        if not componentes:
+            componentes = ["revision_general"]
+
+        diagnostico_parts = [r["diagnostico"] for r in triggered_rules[:3]]
+        if alertas_spn:
+            spn_msgs = [a.get("mensaje", "") for a in alertas_spn[:3] if a.get("mensaje")]
+            if spn_msgs:
+                diagnostico_parts.append("Señales fuera de rango: " + "; ".join(spn_msgs))
+
+        diagnostico = ". ".join(diagnostico_parts) if diagnostico_parts else (
+            f"El autobús {autobus} presenta múltiples señales fuera de rango que requieren atención."
+        )
+
+        # Determine severity
+        if len(triggered_rules) >= 2 or len(alertas_spn) >= 5:
+            nivel_riesgo = "ELEVADO"
+            urgencia = "ESTA_SEMANA"
+        else:
+            nivel_riesgo = "MODERADO"
+            urgencia = "PROXIMO_SERVICIO"
+
+        now_dt = datetime.now(timezone.utc)
+        alert_item = {
+            "alerta_id": str(uuid.uuid4()),
+            "timestamp": timestamp_iso,
+            "autobus": autobus,
+            "tipo_alerta": "MANTENIMIENTO",
+            "nivel_riesgo": nivel_riesgo,
+            "diagnostico": diagnostico,
+            "urgencia": urgencia,
+            "componentes": componentes,
+            "numero_referencia": f"OT-{now_dt.year}-{now_dt.month:02d}{now_dt.day:02d}-{autobus}",
+            "estado": "ACTIVA",
+            "agente_origen": "auto-simulador",
+            "viaje_ruta": item.get("viaje_ruta", ""),
+            "operador_desc": item.get("operador_desc", ""),
+        }
+
+        try:
+            put_item(TABLE_ALERTAS, alert_item)
+            _alertas_cache[autobus] = timestamp_iso
+            tickets_created += 1
+            logger.info(json.dumps({
+                "action": "auto_ticket_created",
+                "autobus": autobus,
+                "nivel_riesgo": nivel_riesgo,
+                "componentes": componentes,
+            }))
+        except Exception as exc:
+            logger.warning(json.dumps({
+                "action": "auto_ticket_error",
+                "autobus": autobus,
+                "error": str(exc),
+            }))
+
+    return tickets_created
+
+
+# ---------------------------------------------------------------------------
 # Lambda handler
 # ---------------------------------------------------------------------------
 
@@ -351,9 +533,20 @@ def lambda_handler(event, context):
                 "items_count": len(all_items),
             }))
 
-    # --- 5. Log summary ---
+    # --- 5. Auto-generate tickets for buses with critical conditions ---
+    auto_tickets = 0
+    last_tick_items = all_items[-(len(viajes)):] if all_items else []
+    if last_tick_items:
+        try:
+            auto_tickets = _generate_auto_tickets(last_tick_items, base_dt.isoformat())
+        except Exception as exc:
+            logger.warning(json.dumps({
+                "action": "auto_ticket_generation_error",
+                "error": str(exc),
+            }))
+
+    # --- 6. Log summary ---
     # Log only the last tick's state for brevity
-    last_tick_items = all_items[-(len(viajes)):]  if all_items else []
     buses_info = []
     for item in last_tick_items:
         buses_info.append({
@@ -372,6 +565,7 @@ def lambda_handler(event, context):
         "buses_por_tick": len(viajes),
         "total_items": len(all_items),
         "items_escritos": write_result.get("items_written", 0),
+        "auto_tickets_creados": auto_tickets,
         "buses_ultimo_tick": buses_info,
     }
     logger.info(json.dumps(resumen, default=str))
@@ -384,5 +578,6 @@ def lambda_handler(event, context):
             "buses_por_tick": len(viajes),
             "total_items": len(all_items),
             "items_escritos": write_result.get("items_written", 0),
+            "auto_tickets_creados": auto_tickets,
         }),
     }

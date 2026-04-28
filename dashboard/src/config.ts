@@ -1,12 +1,12 @@
 export const config = {
   api: {
-    baseUrl: 'https://sutgpijmoh.execute-api.us-east-2.amazonaws.com',
-    chatStreamUrl: 'https://ivlaj734gxomoqt57qdsczwkr40gedxy.lambda-url.us-east-2.on.aws/',
+    baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://sutgpijmoh.execute-api.us-east-2.amazonaws.com',
+    chatStreamUrl: import.meta.env.VITE_CHAT_STREAM_URL || 'https://ivlaj734gxomoqt57qdsczwkr40gedxy.lambda-url.us-east-2.on.aws/',
   },
   cognito: {
-    userPoolId: 'us-east-2_5itNQjtYP',
-    clientId: '7f05s6kerku5ejb58odjj4b1fl',
-    region: 'us-east-2',
+    userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID || 'us-east-2_5itNQjtYP',
+    clientId: import.meta.env.VITE_COGNITO_CLIENT_ID || '7f05s6kerku5ejb58odjj4b1fl',
+    region: import.meta.env.VITE_AWS_REGION || 'us-east-2',
   },
   map: {
     center: [18.5, -99.5] as [number, number],
