@@ -239,6 +239,7 @@ export default function MapPage() {
   const [selectedBus, setSelectedBus] = useState<string | null>(null);
   const [chatBus, setChatBus] = useState<{ id: string; context?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const busCache = useRef<Map<string, Bus>>(new Map());
 
   const loadData = useCallback(async () => {
     try {
@@ -246,7 +247,11 @@ export default function MapPage() {
         fetchFlotaStatus(),
         fetchAlertasActivas(),
       ]);
-      setBuses(flota.buses);
+      // Merge new data into cache — keep last known state for buses that disappear
+      for (const bus of flota.buses) {
+        busCache.current.set(bus.autobus, bus);
+      }
+      setBuses([...busCache.current.values()]);
       setAlertas(alertasData.alertas);
     } catch (err) {
       console.error('Error loading fleet data:', err);
@@ -300,7 +305,7 @@ export default function MapPage() {
           <div className="flex gap-3 text-xs">
             <div className="text-center">
               <p className="text-2xl font-bold text-white">{buses.length}</p>
-              <p className="text-slate-400">Activos</p>
+              <p className="text-slate-400">Total</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-emerald-400">
@@ -309,11 +314,25 @@ export default function MapPage() {
               <p className="text-slate-400">Eficientes</p>
             </div>
             <div className="text-center">
+              <p className="text-2xl font-bold text-amber-400">
+                {buses.filter(b => b.estado_consumo === 'ALERTA_MODERADA').length}
+              </p>
+              <p className="text-slate-400">Moderada</p>
+            </div>
+            <div className="text-center">
               <p className="text-2xl font-bold text-red-400">
                 {buses.filter(b => b.estado_consumo === 'ALERTA_SIGNIFICATIVA').length}
               </p>
               <p className="text-slate-400">Alerta</p>
             </div>
+            {buses.some(b => b.estado_consumo === 'SIN_DATOS') && (
+              <div className="text-center">
+                <p className="text-2xl font-bold text-slate-400">
+                  {buses.filter(b => b.estado_consumo === 'SIN_DATOS').length}
+                </p>
+                <p className="text-slate-400">Sin datos</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
