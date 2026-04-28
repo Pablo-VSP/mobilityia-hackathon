@@ -1,0 +1,834 @@
+[
+  {
+    "autobus": "7309",
+    "viaje_id": 2689828,
+    "operador_cve": "0",
+    "operador_desc": "",
+    "viaje_ruta": "MEXICO TAXQUENA - ACAPULCO COSTERA",
+    "viaje_ruta_origen": "MEXICO TAXQUENA",
+    "viaje_ruta_destino": "ACAPULCO COSTERA",
+    "latitud": 17.42290716666667,
+    "longitud": -99.46591983333333,
+    "spn_valores": {
+      "84": {
+        "valor": 20.4,
+        "name": "Velocidad Km/h",
+        "unidad": "km/h",
+        "fuera_de_rango": false
+      },
+      "91": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Acelerador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "96": {
+        "valor": 84.8,
+        "name": "Nivel Combustible",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "98": {
+        "valor": 100.0,
+        "name": "Nivel de aceite",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "100": {
+        "valor": 264.0,
+        "name": "Presion Aceite Motor",
+        "unidad": "kPa",
+        "fuera_de_rango": false
+      },
+      "110": {
+        "valor": 83.0,
+        "name": "Temperatura Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "111": {
+        "valor": 100.0,
+        "name": "Nivel de anticongelante",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "168": {
+        "valor": 27.4,
+        "name": "Voltaje Bateria",
+        "unidad": "V",
+        "fuera_de_rango": false
+      },
+      "171": {
+        "valor": 29.78,
+        "name": "Temperatura ambiente",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "175": {
+        "valor": 99.72,
+        "name": "Temperatura Aceite Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "183": {
+        "valor": 2.5,
+        "name": "Tasa de combustible",
+        "unidad": "L/h",
+        "fuera_de_rango": false
+      },
+      "184": {
+        "valor": 0.0,
+        "name": "Ahorro de combustible instantaneo",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "185": {
+        "valor": 0.0,
+        "name": "Rendimiento",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "190": {
+        "valor": 550.63,
+        "name": "RPM",
+        "unidad": "rpm",
+        "fuera_de_rango": false
+      },
+      "247": {
+        "valor": 8818.65,
+        "name": "Horas Motor",
+        "unidad": "h",
+        "fuera_de_rango": false
+      },
+      "250": {
+        "valor": 154309.0,
+        "name": "Combustible Consumido",
+        "unidad": "L",
+        "fuera_de_rango": false
+      },
+      "513": {
+        "valor": 8.0,
+        "name": "Porcentaje Torque",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "520": {
+        "valor": 0.0,
+        "name": "Porcentaje de torque del retardador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "521": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Freno",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "523": {
+        "valor": 7.0,
+        "name": "Marchas",
+        "unidad": "",
+        "fuera_de_rango": false
+      },
+      "917": {
+        "valor": 510483.64,
+        "name": "Odometro",
+        "unidad": "km",
+        "fuera_de_rango": false
+      },
+      "1761": {
+        "valor": 88.4,
+        "name": "Nivel Urea",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "20000": {
+        "valor": 24.4,
+        "name": "Voltaje de bateria sin alternador",
+        "unidad": "V",
+        "fuera_de_rango": false
+      }
+    },
+    "alertas_spn": [],
+    "velocidad_kmh": 20.4,
+    "pct_acelerador": 0.0,
+    "nivel_combustible_pct": 84.8,
+    "nivel_aceite_pct": 100.0,
+    "presion_aceite_kpa": 264.0,
+    "temperatura_motor_c": 83.0,
+    "nivel_anticongelante_pct": 100.0,
+    "voltaje_bateria_v": 27.4,
+    "temperatura_ambiente_c": 29.78,
+    "temperatura_aceite_c": 99.72,
+    "tasa_combustible_lh": 2.5,
+    "ahorro_instantaneo_kml": 0.0,
+    "rendimiento_kml": 0.0,
+    "rpm": 550.63,
+    "horas_motor_h": 8818.65,
+    "combustible_consumido_l": 154309.0,
+    "torque_pct": 8.0,
+    "retarder_torque_pct": 0.0,
+    "pct_freno": 0.0,
+    "marcha": 7.0,
+    "odometro_km": 510483.64,
+    "nivel_urea_pct": 88.4,
+    "estado_consumo": "ALERTA_SIGNIFICATIVA",
+    "timestamp": "PLACEHOLDER_TIMESTAMP",
+    "ttl_expiry": 0
+  },
+  {
+    "autobus": "7303",
+    "viaje_id": 2702063,
+    "operador_cve": "1287522",
+    "operador_desc": "ESTRADA AGUIRRE MIGUEL ANGEL",
+    "viaje_ruta": "MEXICO TAXQUENA - ACAPULCO COSTERA",
+    "viaje_ruta_origen": "MEXICO TAXQUENA",
+    "viaje_ruta_destino": "ACAPULCO COSTERA",
+    "latitud": 18.727622833333335,
+    "longitud": -99.25566533333334,
+    "spn_valores": {
+      "84": {
+        "valor": 91.8,
+        "name": "Velocidad Km/h",
+        "unidad": "km/h",
+        "fuera_de_rango": false
+      },
+      "91": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Acelerador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "96": {
+        "valor": 100.0,
+        "name": "Nivel Combustible",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "98": {
+        "valor": 100.0,
+        "name": "Nivel de aceite",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "100": {
+        "valor": 304.0,
+        "name": "Presion Aceite Motor",
+        "unidad": "kPa",
+        "fuera_de_rango": false
+      },
+      "110": {
+        "valor": 93.0,
+        "name": "Temperatura Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "111": {
+        "valor": 100.0,
+        "name": "Nivel de anticongelante",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "168": {
+        "valor": 27.6,
+        "name": "Voltaje Bateria",
+        "unidad": "V",
+        "fuera_de_rango": false
+      },
+      "171": {
+        "valor": 27.78,
+        "name": "Temperatura ambiente",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "175": {
+        "valor": 107.69,
+        "name": "Temperatura Aceite Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "183": {
+        "valor": 0.0,
+        "name": "Tasa de combustible",
+        "unidad": "L/h",
+        "fuera_de_rango": false
+      },
+      "184": {
+        "valor": 11.36,
+        "name": "Ahorro de combustible instantaneo",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "185": {
+        "valor": 0.0,
+        "name": "Rendimiento",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "190": {
+        "valor": 1198.63,
+        "name": "RPM",
+        "unidad": "rpm",
+        "fuera_de_rango": false
+      },
+      "247": {
+        "valor": 9289.95,
+        "name": "Horas Motor",
+        "unidad": "h",
+        "fuera_de_rango": false
+      },
+      "250": {
+        "valor": 157482.5,
+        "name": "Combustible Consumido",
+        "unidad": "L",
+        "fuera_de_rango": false
+      },
+      "513": {
+        "valor": 0.0,
+        "name": "Porcentaje Torque",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "520": {
+        "valor": 0.0,
+        "name": "Porcentaje de torque del retardador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "521": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Freno",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "523": {
+        "valor": 12.0,
+        "name": "Marchas",
+        "unidad": "",
+        "fuera_de_rango": false
+      },
+      "917": {
+        "valor": 523591.34,
+        "name": "Odometro",
+        "unidad": "km",
+        "fuera_de_rango": false
+      },
+      "1761": {
+        "valor": 98.0,
+        "name": "Nivel Urea",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "20000": {
+        "valor": 17.6,
+        "name": "Voltaje de bateria sin alternador",
+        "unidad": "V",
+        "fuera_de_rango": false
+      }
+    },
+    "alertas_spn": [],
+    "velocidad_kmh": 91.8,
+    "pct_acelerador": 0.0,
+    "nivel_combustible_pct": 100.0,
+    "nivel_aceite_pct": 100.0,
+    "presion_aceite_kpa": 304.0,
+    "temperatura_motor_c": 93.0,
+    "nivel_anticongelante_pct": 100.0,
+    "voltaje_bateria_v": 27.6,
+    "temperatura_ambiente_c": 27.78,
+    "temperatura_aceite_c": 107.69,
+    "tasa_combustible_lh": 0.0,
+    "ahorro_instantaneo_kml": 11.36,
+    "rendimiento_kml": 0.0,
+    "rpm": 1198.63,
+    "horas_motor_h": 9289.95,
+    "combustible_consumido_l": 157482.5,
+    "torque_pct": 0.0,
+    "retarder_torque_pct": 0.0,
+    "pct_freno": 0.0,
+    "marcha": 12.0,
+    "odometro_km": 523591.34,
+    "nivel_urea_pct": 98.0,
+    "estado_consumo": "ALERTA_SIGNIFICATIVA",
+    "timestamp": "PLACEHOLDER_TIMESTAMP",
+    "ttl_expiry": 0
+  },
+  {
+    "autobus": "7303",
+    "viaje_id": 2734771,
+    "operador_cve": "1265457",
+    "operador_desc": "HERNANDEZ VILLANUEVA EMILIO",
+    "viaje_ruta": "ACAPULCO COSTERA - MEXICO TAXQUENA",
+    "viaje_ruta_origen": "ACAPULCO COSTERA",
+    "viaje_ruta_destino": "MEXICO TAXQUENA",
+    "latitud": 19.093182166666665,
+    "longitud": -99.21245433333333,
+    "spn_valores": {
+      "84": {
+        "valor": 3.9,
+        "name": "Velocidad Km/h",
+        "unidad": "km/h",
+        "fuera_de_rango": false
+      },
+      "91": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Acelerador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "96": {
+        "valor": 75.6,
+        "name": "Nivel Combustible",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "100": {
+        "valor": 148.0,
+        "name": "Presion Aceite Motor",
+        "unidad": "kPa",
+        "fuera_de_rango": false
+      },
+      "110": {
+        "valor": 81.0,
+        "name": "Temperatura Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "111": {
+        "valor": 100.0,
+        "name": "Nivel de anticongelante",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "168": {
+        "valor": 27.4,
+        "name": "Voltaje Bateria",
+        "unidad": "V",
+        "fuera_de_rango": false
+      },
+      "171": {
+        "valor": 12.59,
+        "name": "Temperatura ambiente",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "175": {
+        "valor": 101.78,
+        "name": "Temperatura Aceite Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "183": {
+        "valor": 1.55,
+        "name": "Tasa de combustible",
+        "unidad": "L/h",
+        "fuera_de_rango": false
+      },
+      "184": {
+        "valor": 2.95,
+        "name": "Ahorro de combustible instantaneo",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "185": {
+        "valor": 0.0,
+        "name": "Rendimiento",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "190": {
+        "valor": 614.38,
+        "name": "RPM",
+        "unidad": "rpm",
+        "fuera_de_rango": false
+      },
+      "247": {
+        "valor": 9446.85,
+        "name": "Horas Motor",
+        "unidad": "h",
+        "fuera_de_rango": false
+      },
+      "250": {
+        "valor": 160143.0,
+        "name": "Combustible Consumido",
+        "unidad": "L",
+        "fuera_de_rango": false
+      },
+      "513": {
+        "valor": 4.0,
+        "name": "Porcentaje Torque",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "520": {
+        "valor": 0.0,
+        "name": "Porcentaje de torque del retardador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "521": {
+        "valor": 15.2,
+        "name": "Posicion Pedal Freno",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "523": {
+        "valor": 2.0,
+        "name": "Marchas",
+        "unidad": "",
+        "fuera_de_rango": false
+      },
+      "917": {
+        "valor": 532737.35,
+        "name": "Odometro",
+        "unidad": "km",
+        "fuera_de_rango": false
+      },
+      "1761": {
+        "valor": 71.2,
+        "name": "Nivel Urea",
+        "unidad": "%",
+        "fuera_de_rango": false
+      }
+    },
+    "alertas_spn": [],
+    "velocidad_kmh": 3.9,
+    "pct_acelerador": 0.0,
+    "nivel_combustible_pct": 75.6,
+    "presion_aceite_kpa": 148.0,
+    "temperatura_motor_c": 81.0,
+    "nivel_anticongelante_pct": 100.0,
+    "voltaje_bateria_v": 27.4,
+    "temperatura_ambiente_c": 12.59,
+    "temperatura_aceite_c": 101.78,
+    "tasa_combustible_lh": 1.55,
+    "ahorro_instantaneo_kml": 2.95,
+    "rendimiento_kml": 0.0,
+    "rpm": 614.38,
+    "horas_motor_h": 9446.85,
+    "combustible_consumido_l": 160143.0,
+    "torque_pct": 4.0,
+    "retarder_torque_pct": 0.0,
+    "pct_freno": 15.2,
+    "marcha": 2.0,
+    "odometro_km": 532737.35,
+    "nivel_urea_pct": 71.2,
+    "estado_consumo": "ALERTA_SIGNIFICATIVA",
+    "timestamp": "PLACEHOLDER_TIMESTAMP",
+    "ttl_expiry": 0
+  },
+  {
+    "autobus": "7305",
+    "viaje_id": 2737103,
+    "operador_cve": "1243834",
+    "operador_desc": "REY ALBINO GOMEZ WENCES",
+    "viaje_ruta": "ACAPULCO COSTERA - MEXICO TAXQUENA",
+    "viaje_ruta_origen": "ACAPULCO COSTERA",
+    "viaje_ruta_destino": "MEXICO TAXQUENA",
+    "latitud": 19.113157166666667,
+    "longitud": -99.18340083333334,
+    "spn_valores": {
+      "84": {
+        "valor": 92.0,
+        "name": "Velocidad Km/h",
+        "unidad": "km/h",
+        "fuera_de_rango": false
+      },
+      "91": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Acelerador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "96": {
+        "valor": 73.2,
+        "name": "Nivel Combustible",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "100": {
+        "valor": 416.0,
+        "name": "Presion Aceite Motor",
+        "unidad": "kPa",
+        "fuera_de_rango": false
+      },
+      "110": {
+        "valor": 92.0,
+        "name": "Temperatura Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "111": {
+        "valor": 100.0,
+        "name": "Nivel de anticongelante",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "168": {
+        "valor": 27.2,
+        "name": "Voltaje Bateria",
+        "unidad": "V",
+        "fuera_de_rango": false
+      },
+      "171": {
+        "valor": 17.88,
+        "name": "Temperatura ambiente",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "175": {
+        "valor": 106.59,
+        "name": "Temperatura Aceite Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "183": {
+        "valor": 0.0,
+        "name": "Tasa de combustible",
+        "unidad": "L/h",
+        "fuera_de_rango": false
+      },
+      "184": {
+        "valor": 1.38,
+        "name": "Ahorro de combustible instantaneo",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "185": {
+        "valor": 0.0,
+        "name": "Rendimiento",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "190": {
+        "valor": 1209.0,
+        "name": "RPM",
+        "unidad": "rpm",
+        "fuera_de_rango": false
+      },
+      "250": {
+        "valor": 159579.0,
+        "name": "Combustible Consumido",
+        "unidad": "L",
+        "fuera_de_rango": false
+      },
+      "513": {
+        "valor": 0.0,
+        "name": "Porcentaje Torque",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "520": {
+        "valor": -5.0,
+        "name": "Porcentaje de torque del retardador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "521": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Freno",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "523": {
+        "valor": 12.0,
+        "name": "Marchas",
+        "unidad": "",
+        "fuera_de_rango": false
+      },
+      "917": {
+        "valor": 524023.74,
+        "name": "Odometro",
+        "unidad": "km",
+        "fuera_de_rango": false
+      },
+      "1761": {
+        "valor": 89.2,
+        "name": "Nivel Urea",
+        "unidad": "%",
+        "fuera_de_rango": false
+      }
+    },
+    "alertas_spn": [],
+    "velocidad_kmh": 92.0,
+    "pct_acelerador": 0.0,
+    "nivel_combustible_pct": 73.2,
+    "presion_aceite_kpa": 416.0,
+    "temperatura_motor_c": 92.0,
+    "nivel_anticongelante_pct": 100.0,
+    "voltaje_bateria_v": 27.2,
+    "temperatura_ambiente_c": 17.88,
+    "temperatura_aceite_c": 106.59,
+    "tasa_combustible_lh": 0.0,
+    "ahorro_instantaneo_kml": 1.38,
+    "rendimiento_kml": 0.0,
+    "rpm": 1209.0,
+    "combustible_consumido_l": 159579.0,
+    "torque_pct": 0.0,
+    "retarder_torque_pct": -5.0,
+    "pct_freno": 0.0,
+    "marcha": 12.0,
+    "odometro_km": 524023.74,
+    "nivel_urea_pct": 89.2,
+    "estado_consumo": "ALERTA_SIGNIFICATIVA",
+    "timestamp": "PLACEHOLDER_TIMESTAMP",
+    "ttl_expiry": 0
+  },
+  {
+    "autobus": "7317",
+    "viaje_id": 2710211,
+    "operador_cve": "0",
+    "operador_desc": "",
+    "viaje_ruta": "MEXICO TAXQUENA - ACAPULCO COSTERA",
+    "viaje_ruta_origen": "MEXICO TAXQUENA",
+    "viaje_ruta_destino": "ACAPULCO COSTERA",
+    "latitud": 16.862979666666668,
+    "longitud": -99.8835105,
+    "spn_valores": {
+      "84": {
+        "valor": 0.0,
+        "name": "Velocidad Km/h",
+        "unidad": "km/h",
+        "fuera_de_rango": false
+      },
+      "91": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Acelerador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "96": {
+        "valor": 15.2,
+        "name": "Nivel Combustible",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "100": {
+        "valor": 196.0,
+        "name": "Presion Aceite Motor",
+        "unidad": "kPa",
+        "fuera_de_rango": false
+      },
+      "110": {
+        "valor": 83.0,
+        "name": "Temperatura Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "111": {
+        "valor": 100.0,
+        "name": "Nivel de anticongelante",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "168": {
+        "valor": 27.4,
+        "name": "Voltaje Bateria",
+        "unidad": "V",
+        "fuera_de_rango": false
+      },
+      "171": {
+        "valor": 32.78,
+        "name": "Temperatura ambiente",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "175": {
+        "valor": 102.16,
+        "name": "Temperatura Aceite Motor",
+        "unidad": "C",
+        "fuera_de_rango": false
+      },
+      "183": {
+        "valor": 1.75,
+        "name": "Tasa de combustible",
+        "unidad": "L/h",
+        "fuera_de_rango": false
+      },
+      "184": {
+        "valor": 0.0,
+        "name": "Ahorro de combustible instantaneo",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "185": {
+        "valor": 0.0,
+        "name": "Rendimiento",
+        "unidad": "km/L",
+        "fuera_de_rango": false
+      },
+      "190": {
+        "valor": 551.88,
+        "name": "RPM",
+        "unidad": "rpm",
+        "fuera_de_rango": false
+      },
+      "250": {
+        "valor": 140459.5,
+        "name": "Combustible Consumido",
+        "unidad": "L",
+        "fuera_de_rango": false
+      },
+      "513": {
+        "valor": 5.0,
+        "name": "Porcentaje Torque",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "520": {
+        "valor": 0.0,
+        "name": "Porcentaje de torque del retardador",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "521": {
+        "valor": 0.0,
+        "name": "Posicion Pedal Freno",
+        "unidad": "%",
+        "fuera_de_rango": false
+      },
+      "523": {
+        "valor": 0.0,
+        "name": "Marchas",
+        "unidad": "",
+        "fuera_de_rango": false
+      },
+      "917": {
+        "valor": 456089.91,
+        "name": "Odometro",
+        "unidad": "km",
+        "fuera_de_rango": false
+      },
+      "1761": {
+        "valor": 44.4,
+        "name": "Nivel Urea",
+        "unidad": "%",
+        "fuera_de_rango": false
+      }
+    },
+    "alertas_spn": [],
+    "velocidad_kmh": 0.0,
+    "pct_acelerador": 0.0,
+    "nivel_combustible_pct": 15.2,
+    "presion_aceite_kpa": 196.0,
+    "temperatura_motor_c": 83.0,
+    "nivel_anticongelante_pct": 100.0,
+    "voltaje_bateria_v": 27.4,
+    "temperatura_ambiente_c": 32.78,
+    "temperatura_aceite_c": 102.16,
+    "tasa_combustible_lh": 1.75,
+    "ahorro_instantaneo_kml": 0.0,
+    "rendimiento_kml": 0.0,
+    "rpm": 551.88,
+    "combustible_consumido_l": 140459.5,
+    "torque_pct": 5.0,
+    "retarder_torque_pct": 0.0,
+    "pct_freno": 0.0,
+    "marcha": 0.0,
+    "odometro_km": 456089.91,
+    "nivel_urea_pct": 44.4,
+    "estado_consumo": "ALERTA_SIGNIFICATIVA",
+    "timestamp": "PLACEHOLDER_TIMESTAMP",
+    "ttl_expiry": 0
+  }
+]

@@ -38,3 +38,6 @@ logs/
 *.tmp
 *.bak
 .kiro/settings/mcp.json
+
+# Data — archivos pesados (descargar manualmente desde carpeta compartida en la nube)
+data/consolidated_telemetry.parquet
