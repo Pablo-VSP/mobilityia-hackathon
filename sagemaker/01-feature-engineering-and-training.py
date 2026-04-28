@@ -70,9 +70,9 @@ catalogo = pd.read_parquet(f"s3://{BUCKET}/{PREFIX_SPN}")
 print(f"  Catálogo SPN: {len(catalogo)} variables")
 
 # Limpiar nombres de columnas (pueden tener trailing whitespace del Parquet)
-telemetria.columns = telemetria.columns.str.strip()
-fallas.columns = fallas.columns.str.strip()
-catalogo.columns = catalogo.columns.str.strip()
+telemetria.columns = telemetria.columns.str.strip().str.lower()
+fallas.columns = fallas.columns.str.strip().str.lower()
+catalogo.columns = catalogo.columns.str.strip().str.lower()
 
 # Limpiar valores string del catálogo
 for col in catalogo.select_dtypes(include="object").columns:
