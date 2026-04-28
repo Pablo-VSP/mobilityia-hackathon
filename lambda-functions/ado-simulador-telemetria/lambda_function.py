@@ -2,8 +2,14 @@
 ado-simulador-telemetria — Simulador de telemetría en tiempo real.
 
 Lee viajes pre-procesados desde S3 (viajes_consolidados.json) y simula
-múltiples buses avanzando simultáneamente por sus rutas con desfase
-temporal.
+múltiples buses avanzando simultáneamente por sus rutas.
+
+Datos de entrada:
+  - 10 viajes de 5 minutos (300 frames cada uno, 1 frame/segundo)
+  - 22 SPNs por frame, GPS real de la ruta México–Acapulco
+  - 2-3 anomalías inyectadas por viaje (conducción agresiva, riesgo
+    mecánico, velocidad excesiva, frenado brusco, balatas desgastadas)
+  - Cada bus tiene un fragmento GPS diferente (sin solapamiento)
 
 Modo burst: cada invocación (trigger cada 1 minuto via EventBridge)
 genera BURST_COUNT registros por bus, espaciados TICK_INTERVAL segundos
@@ -11,11 +17,9 @@ entre sí. Con los defaults (6 ticks × 10s = 60s) se cubren los 60
 segundos entre invocaciones, logrando resolución efectiva de 10 segundos
 en DynamoDB sin necesidad de triggers sub-minuto.
 
-Los viajes se reproducen en loop: cuando un bus llega al final de su
-viaje, reinicia desde el frame 0.
-
-Desfase temporal: cada bus arranca con un offset diferente para que
-no vayan todos juntos en la misma posición de la ruta.
+Con STEP_SECONDS=10 y frames cada 1s, cada tick avanza 10 frames →
+el bus se mueve fluidamente en el mapa. Los viajes de 5 min se
+reproducen en loop infinito (reinician al terminar).
 
 Requisitos: 2.1–2.10, 11.3, 11.5
 """
@@ -49,13 +53,13 @@ S3_VIAJES_KEY = os.environ.get(
 DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "ado-telemetria-live")
 
 # How many seconds of trip time each tick advances.
-# With TICK_INTERVAL=10 and STEP_SECONDS=30, each 10s real tick
-# advances 30s of trip time → 3x speedup.
-STEP_SECONDS = int(os.environ.get("STEP_SECONDS", "30"))
+# With frames every 1s and TICK_INTERVAL=10, STEP_SECONDS=10 means
+# each tick advances 10 frames → 1x real-time, fluid movement.
+STEP_SECONDS = int(os.environ.get("STEP_SECONDS", "10"))
 
-# Desfase entre buses: bus 0 starts at 0%, bus 1 at DESFASE%, bus 2 at 2*DESFASE%
-# 15% means ~45 min apart on a 5h trip
-DESFASE_PCT = int(os.environ.get("DESFASE_PCT", "15"))
+# Desfase entre buses: bus 0 starts at 0%, bus 1 at DESFASE%, etc.
+# Set to 0 when trips already have non-overlapping GPS fragments.
+DESFASE_PCT = int(os.environ.get("DESFASE_PCT", "0"))
 
 # Burst mode: how many ticks to emit per invocation and interval between them.
 # 6 ticks × 10s = 60s → covers the full minute between EventBridge triggers.
