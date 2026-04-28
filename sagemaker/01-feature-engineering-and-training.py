@@ -69,12 +69,34 @@ print(f"  Fallas: {len(fallas):,} registros")
 catalogo = pd.read_parquet(f"s3://{BUCKET}/{PREFIX_SPN}")
 print(f"  Catálogo SPN: {len(catalogo)} variables")
 
+# Limpiar nombres de columnas (pueden tener trailing whitespace del Parquet)
+telemetria.columns = telemetria.columns.str.strip()
+fallas.columns = fallas.columns.str.strip()
+catalogo.columns = catalogo.columns.str.strip()
+
+# Limpiar valores string del catálogo
+for col in catalogo.select_dtypes(include="object").columns:
+    catalogo[col] = catalogo[col].str.strip()
+
+# Limpiar valores string de fallas
+for col in fallas.select_dtypes(include="object").columns:
+    fallas[col] = fallas[col].str.strip()
+
+# Limpiar valores string de telemetría (solo columnas clave)
+for col in ["viaje_ruta", "viaje_ruta_origen", "viaje_ruta_destino", "operador_cve", "operador_desc"]:
+    if col in telemetria.columns:
+        telemetria[col] = telemetria[col].astype(str).str.strip()
+
+print(f"  Columnas catálogo: {catalogo.columns.tolist()}")
+print(f"  Columnas telemetría: {telemetria.columns.tolist()}")
+print(f"  Columnas fallas: {fallas.columns.tolist()}")
+
 # Indexar catálogo por SPN ID
 catalogo_dict = {}
 for _, row in catalogo.iterrows():
     spn_id = int(row["id"])
     catalogo_dict[spn_id] = {
-        "name": str(row.get("name", "")).strip(),
+        "name": str(row.get("name", "")),
         "minimo": float(row.get("minimo", 0)),
         "maximo": float(row.get("maximo", 0)),
         "delta": float(row.get("delta", 0)),
@@ -88,8 +110,8 @@ print(f"  Catálogo indexado: {len(catalogo_dict)} SPNs")
 print("\n[2/7] Explorando y limpiando datos...")
 
 # Convertir tipos
-telemetria["autobus"] = telemetria["autobus"].astype(str)
-telemetria["evento_spn"] = telemetria["evento_spn"].astype(int)
+telemetria["autobus"] = telemetria["autobus"].astype(str).str.strip()
+telemetria["evento_spn"] = pd.to_numeric(telemetria["evento_spn"], errors="coerce").astype("Int64")
 telemetria["evento_valor"] = pd.to_numeric(telemetria["evento_valor"], errors="coerce")
 
 # Parsear fechas de telemetría
@@ -101,7 +123,7 @@ if "evento_fecha_hora" in telemetria.columns:
         telemetria["evento_fecha"] = telemetria["evento_fecha_hora"].dt.date
 
 # Limpiar fallas
-fallas["autobus"] = fallas["autobus"].astype(str)
+fallas["autobus"] = fallas["autobus"].astype(str).str.strip()
 fallas["codigo"] = fallas["codigo"].astype(str).str.strip()
 if "fecha_hora" in fallas.columns:
     fallas["fecha_hora"] = pd.to_datetime(fallas["fecha_hora"], errors="coerce")
