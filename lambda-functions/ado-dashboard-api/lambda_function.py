@@ -288,64 +288,177 @@ def handle_co2_estimado() -> dict:
     """
     /dashboard/co2-estimado — Req 10.4
 
-    Returns qualitative CO₂ reduction descriptions using fuzzy language
-    per constraint C-003. No specific numeric values.
+    Calcula métricas ambientales en tiempo real basadas en:
+    1. Rendimiento actual de los buses en ruta (DynamoDB)
+    2. Factor de emisión: 2.68 kg CO₂ por litro de diésel (IPCC)
+    3. Rendimiento de referencia: 3.7 km/L (ruta CDMX-Acapulco, manual ambiental)
+    4. Distancia de referencia: 380 km por viaje
+
+    Genera indicadores de CO₂ por bus, por ruta y de flota,
+    comparando contra el rendimiento de referencia.
+    C-003: Los valores se presentan pero las mejoras usan lenguaje difuso.
     """
+    FACTOR_CO2_KG_POR_LITRO = 2.68
+    RENDIMIENTO_REFERENCIA = 3.7  # km/L (manual ambiental, ruta pivote)
+    DISTANCIA_RUTA_KM = 380
+
+    # CO₂ de referencia por viaje (el "ideal")
+    consumo_ref = DISTANCIA_RUTA_KM / RENDIMIENTO_REFERENCIA
+    co2_ref_por_viaje = consumo_ref * FACTOR_CO2_KG_POR_LITRO
+
+    # Consultar buses activos (últimos 10 min)
+    timestamp_limit = (
+        datetime.now(timezone.utc) - timedelta(minutes=10)
+    ).isoformat()
+    records = scan_recent(TABLE_TELEMETRIA, timestamp_limit)
+
+    if not records:
+        return {
+            "titulo": "Impacto Ambiental — ADO MobilityIA",
+            "estado": "sin_datos",
+            "mensaje": "No hay buses activos en este momento para calcular métricas ambientales.",
+            "factor_co2": f"{FACTOR_CO2_KG_POR_LITRO} kg CO₂/L diésel (IPCC)",
+            "rendimiento_referencia_kml": RENDIMIENTO_REFERENCIA,
+        }
+
+    # Calcular métricas por bus
+    buses_data = {}
+    for record in records:
+        bus = record.get("autobus", "?")
+        rend = None
+        try:
+            rend = float(record.get("rendimiento_kml", 0))
+        except (ValueError, TypeError):
+            pass
+
+        tasa = None
+        try:
+            tasa = float(record.get("tasa_combustible_lh", 0))
+        except (ValueError, TypeError):
+            pass
+
+        vel = None
+        try:
+            vel = float(record.get("velocidad_kmh", 0))
+        except (ValueError, TypeError):
+            pass
+
+        if bus not in buses_data:
+            buses_data[bus] = {
+                "rendimientos": [],
+                "tasas": [],
+                "velocidades": [],
+                "ruta": record.get("viaje_ruta", ""),
+                "operador": record.get("operador_desc", ""),
+            }
+
+        if rend and rend > 0:
+            buses_data[bus]["rendimientos"].append(rend)
+        if tasa and tasa > 0:
+            buses_data[bus]["tasas"].append(tasa)
+        if vel and vel > 0:
+            buses_data[bus]["velocidades"].append(vel)
+
+    # Calcular indicadores por bus
+    indicadores_buses = []
+    total_co2_estimado = 0
+    total_co2_referencia = 0
+    rendimientos_flota = []
+
+    for bus, data in buses_data.items():
+        if not data["rendimientos"]:
+            continue
+
+        rend_avg = sum(data["rendimientos"]) / len(data["rendimientos"])
+        rendimientos_flota.append(rend_avg)
+
+        # CO₂ estimado para este bus (proyectado al viaje completo)
+        consumo_bus = DISTANCIA_RUTA_KM / max(rend_avg, 0.5)
+        co2_bus = consumo_bus * FACTOR_CO2_KG_POR_LITRO
+
+        # Diferencia vs referencia
+        co2_diferencia = co2_bus - co2_ref_por_viaje
+
+        total_co2_estimado += co2_bus
+        total_co2_referencia += co2_ref_por_viaje
+
+        # Clasificación ambiental (del manual de emisiones)
+        co2_por_km = FACTOR_CO2_KG_POR_LITRO / max(rend_avg, 0.5)
+        if co2_por_km < 0.670:
+            clasificacion = "ECO_EFICIENTE"
+        elif co2_por_km <= 0.724:
+            clasificacion = "EFICIENTE"
+        elif co2_por_km <= 0.838:
+            clasificacion = "ESTANDAR"
+        elif co2_por_km <= 0.967:
+            clasificacion = "INEFICIENTE"
+        else:
+            clasificacion = "CRITICO"
+
+        # Descripción cualitativa (C-003)
+        if co2_diferencia <= 0:
+            tendencia = "El autobús opera por debajo del estándar de emisiones de la ruta."
+        elif co2_diferencia < 20:
+            tendencia = "Emisiones ligeramente superiores al estándar. Oportunidad de mejora menor."
+        elif co2_diferencia < 50:
+            tendencia = "Emisiones moderadamente superiores al estándar. Se recomienda revisar patrones de conducción."
+        else:
+            tendencia = "Emisiones significativamente superiores al estándar. Intervención recomendada."
+
+        indicadores_buses.append({
+            "autobus": bus,
+            "operador": data["operador"],
+            "ruta": data["ruta"],
+            "rendimiento_promedio_kml": round(rend_avg, 2),
+            "co2_estimado_por_viaje_kg": round(co2_bus, 1),
+            "co2_referencia_por_viaje_kg": round(co2_ref_por_viaje, 1),
+            "co2_por_km_kg": round(co2_por_km, 3),
+            "clasificacion_ambiental": clasificacion,
+            "tendencia": tendencia,
+        })
+
+    # Ordenar: peores primero
+    indicadores_buses.sort(key=lambda x: x["co2_estimado_por_viaje_kg"], reverse=True)
+
+    # Métricas de flota
+    rend_flota = sum(rendimientos_flota) / len(rendimientos_flota) if rendimientos_flota else 0
+    co2_flota_por_km = FACTOR_CO2_KG_POR_LITRO / max(rend_flota, 0.5) if rend_flota > 0 else 0
+
+    # Distribución ambiental
+    dist = defaultdict(int)
+    for b in indicadores_buses:
+        dist[b["clasificacion_ambiental"]] += 1
+
+    # Potencial de ahorro si todos alcanzan referencia
+    ahorro_potencial_co2 = max(total_co2_estimado - total_co2_referencia, 0)
+
     return {
-        "titulo": "Estimación de Impacto Ambiental — ADO MobilityIA",
-        "descripcion_general": (
-            "La plataforma ADO MobilityIA contribuye a una reducción notable "
-            "en las emisiones de CO₂ de la flota mediante la optimización "
-            "del consumo de combustible y la anticipación de eventos mecánicos."
-        ),
-        "areas_de_impacto": [
-            {
-                "area": "Optimización de combustible",
-                "descripcion": (
-                    "La detección temprana de desviaciones en el consumo permite "
-                    "una mejora significativa en la eficiencia de combustible por viaje, "
-                    "lo que se traduce en una reducción proporcional de emisiones de CO₂."
-                ),
-                "nivel_impacto": "reducción notable",
-            },
-            {
-                "area": "Conducción eficiente",
-                "descripcion": (
-                    "La identificación de patrones de conducción ineficiente "
-                    "(aceleración brusca, RPM fuera de rango, frenado tardío) "
-                    "permite reducir la variabilidad operativa entre conductores, "
-                    "contribuyendo a una menor huella de carbono por kilómetro."
-                ),
-                "nivel_impacto": "mejora significativa",
-            },
-            {
-                "area": "Mantenimiento preventivo",
-                "descripcion": (
-                    "La anticipación de eventos mecánicos reduce las emisiones "
-                    "asociadas a motores en condiciones subóptimas (temperatura elevada, "
-                    "presión de aceite baja, sistemas de escape degradados)."
-                ),
-                "nivel_impacto": "contribución positiva",
-            },
-            {
-                "area": "Disponibilidad de flota",
-                "descripcion": (
-                    "Una mayor disponibilidad de unidades permite optimizar la "
-                    "asignación de autobuses a rutas, evitando el uso de unidades "
-                    "menos eficientes como reemplazo de emergencia."
-                ),
-                "nivel_impacto": "optimización operativa",
-            },
-        ],
-        "cumplimiento_normativo": (
-            "Las métricas estimadas de reducción de CO₂ son consistentes con los "
-            "objetivos de la NOM-044-SEMARNAT y contribuyen a fortalecer la "
-            "posición de Mobility ADO en cumplimiento ambiental."
-        ),
-        "nota": (
-            "Los valores presentados son estimaciones cualitativas basadas en "
-            "datos simulados (C-004). No representan métricas numéricas específicas."
-        ),
+        "titulo": "Impacto Ambiental en Tiempo Real — ADO MobilityIA",
+        "factor_co2": f"{FACTOR_CO2_KG_POR_LITRO} kg CO₂/L diésel (IPCC)",
+        "rendimiento_referencia_kml": RENDIMIENTO_REFERENCIA,
+        "distancia_ruta_km": DISTANCIA_RUTA_KM,
+        "co2_referencia_por_viaje_kg": round(co2_ref_por_viaje, 1),
+        "flota": {
+            "buses_activos": len(indicadores_buses),
+            "rendimiento_promedio_kml": round(rend_flota, 2),
+            "co2_promedio_por_km_kg": round(co2_flota_por_km, 3),
+            "co2_total_estimado_kg": round(total_co2_estimado, 1),
+            "co2_total_referencia_kg": round(total_co2_referencia, 1),
+            "ahorro_potencial_co2_kg": round(ahorro_potencial_co2, 1),
+            "distribucion_ambiental": dict(dist),
+            "descripcion": (
+                "La flota activa muestra una oportunidad de reducción de emisiones "
+                "al optimizar los patrones de conducción de las unidades clasificadas "
+                "como ineficientes o críticas."
+                if ahorro_potencial_co2 > 0
+                else "La flota activa opera dentro de los parámetros ambientales esperados."
+            ),
+        },
+        "buses": indicadores_buses,
+        "cumplimiento_normativo": {
+            "nom_044": "El monitoreo continuo de rendimiento y emisiones estimadas contribuye al cumplimiento de NOM-044-SEMARNAT.",
+            "acuerdo_paris": "Las métricas de CO₂ por kilómetro permiten evidenciar el compromiso de reducción de emisiones de la flota.",
+        },
     }
 
 
