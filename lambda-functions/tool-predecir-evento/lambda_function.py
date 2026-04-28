@@ -47,7 +47,7 @@ S3_FALLAS_KEY = os.environ.get("S3_FALLAS_KEY", "hackathon-data/fallas-simuladas
 SAGEMAKER_ENDPOINT = os.environ.get("SAGEMAKER_ENDPOINT", "ado-prediccion-eventos")
 S3_FEATURE_NAMES_KEY = os.environ.get(
     "S3_FEATURE_NAMES_KEY",
-    "hackathon-data/modelos/sagemaker/training-data/feature_names.json",
+    "hackathon-data/modelos/sagemaker-v2/training-data/feature_names.json",
 )
 
 # Number of records to query for prediction analysis
@@ -73,6 +73,20 @@ ML_RISK_THRESHOLDS = {
 CODIGOS_CRITICOS = {"86", "100", "158"}
 # Códigos de escalamiento (severidad_inferencia = 2)
 CODIGOS_ESCALAMIENTO = {"32", "131", "111", "37"}
+
+# v2 model: SPNs clave por sistema de falla (10 SPNs, 4 stats each)
+SPNS_MODELO_V2 = {
+    100: "presion_aceite",     # Código 100 — presión aceite motor
+    98:  "nivel_aceite",       # Código 100 — nivel aceite %
+    175: "temp_aceite",        # Código 100 — temperatura aceite
+    110: "temp_motor",         # Código 100 — temperatura motor
+    190: "rpm",                # Código 100 — RPM (estrés motor)
+    168: "voltaje_bat",        # Código 158 — voltaje batería
+    521: "freno",              # Código 86 — pedal freno
+    84:  "velocidad",          # Código 86 — velocidad (frenado brusco)
+    520: "retarder",           # Código 86 — retarder (compensación frenos)
+    247: "horas_motor",        # Todos — acumulador de desgaste
+}
 
 # Urgency mapping (Req 7.5)
 URGENCY_MAP = {
@@ -247,17 +261,19 @@ def _build_feature_vector(records, catalogo_spn):
 def _build_fault_features(fallas_recientes):
     """Build fault-related features matching the trained model schema.
 
-    Features:
-        fallas_criticas_30d, fallas_criticas_90d, fallas_sev2_30d,
-        fallas_sev2_recurrentes_30d, severidad_max_30d,
-        dias_desde_ultima_falla_critica, tiene_falla_activa,
-        codigos_criticos_unicos_90d, fallas_correlacionadas
+    Produces features compatible with both v1 and v2 models:
+      v1: fallas_criticas_30d, fallas_criticas_90d, fallas_sev2_30d,
+          fallas_sev2_recurrentes_30d, severidad_max_30d,
+          dias_desde_ultima_falla_critica, tiene_falla_activa,
+          codigos_criticos_unicos_90d, fallas_correlacionadas
+      v2: fallas_criticas_30d, fallas_sev2_30d, fallas_sev2_recurrentes,
+          dias_desde_ultima_critica, tiene_falla_activa, total_fallas_90d
 
     Args:
         fallas_recientes: List of fault dicts sorted by fecha_hora desc.
 
     Returns:
-        Dict with the 9 fault features.
+        Dict with fault features (superset of both v1 and v2 keys).
     """
     from datetime import datetime, timedelta
 
@@ -321,6 +337,7 @@ def _build_fault_features(fallas_recientes):
         dias_ultima_critica = 365  # No critical faults found
 
     return {
+        # v1 keys
         "fallas_criticas_30d": criticas_30,
         "fallas_criticas_90d": criticas_90,
         "fallas_sev2_30d": sev2_30,
@@ -330,22 +347,32 @@ def _build_fault_features(fallas_recientes):
         "tiene_falla_activa": tiene_activa,
         "codigos_criticos_unicos_90d": len(codigos_criticos_set),
         "fallas_correlacionadas": fallas_correlacionadas,
+        # v2 keys (aliases for v2 model compatibility)
+        "fallas_sev2_recurrentes": sev2_recurrentes,
+        "dias_desde_ultima_critica": dias_ultima_critica,
+        "total_fallas_90d": criticas_90 + sev2_30,
     }
 
 
 def _build_contextual_features(features, records):
     """Build contextual features matching the trained model schema.
 
-    Features: balata_min_pct, odometro_km, horas_motor_h,
-              total_spns_fuera_rango, total_anomalias
+    Produces features compatible with both v1 and v2 models:
+      v1: balata_min_pct, odometro_km, horas_motor_h,
+          total_spns_fuera_rango, total_anomalias
+      v2: pct_presion_bajo_150, pct_presion_bajo_50,
+          pct_temp_motor_sobre_115, pct_temp_motor_sobre_140,
+          pct_voltaje_bajo_12, pct_voltaje_sobre_15_5,
+          total_oor, n_registros_ventana
 
     Args:
         features: SPN feature dict from _build_feature_vector().
         records: DynamoDB records.
 
     Returns:
-        Dict with the 5 contextual features.
+        Dict with contextual features (superset of both v1 and v2 keys).
     """
+    # --- v1 contextual features ---
     # Minimum brake pad percentage across all 6 positions
     balata_vals = []
     for spn_id in sorted(SPNS_BALATAS):
@@ -371,22 +398,129 @@ def _build_contextual_features(features, records):
     total_oor = sum(f["out_of_range_count"] for f in features.values() if f["count"] > 0)
     total_anomalias = sum(f["anomaly_count"] for f in features.values() if f["count"] > 0)
 
+    # --- v2 threshold features ---
+    # Percentage of readings crossing critical thresholds
+    def _pct_threshold(spn_id, comparator, threshold):
+        """Calculate percentage of SPN values crossing a threshold."""
+        values = []
+        spn_key = str(spn_id)
+        for record in records:
+            spn_valores = record.get("spn_valores", {})
+            spn_data = spn_valores.get(spn_key)
+            if spn_data:
+                val = _safe_float(spn_data.get("valor"))
+                if val is not None:
+                    values.append(val)
+        if not values:
+            return 0.0
+        if comparator == "lt":
+            return sum(1 for v in values if v < threshold) / len(values)
+        else:  # "gt"
+            return sum(1 for v in values if v > threshold) / len(values)
+
+    pct_presion_bajo_150 = _pct_threshold(100, "lt", 150)
+    pct_presion_bajo_50 = _pct_threshold(100, "lt", 50)
+    pct_temp_motor_sobre_115 = _pct_threshold(110, "gt", 115)
+    pct_temp_motor_sobre_140 = _pct_threshold(110, "gt", 140)
+    pct_voltaje_bajo_12 = _pct_threshold(168, "lt", 12)
+    pct_voltaje_sobre_15_5 = _pct_threshold(168, "gt", 15.5)
+
+    n_registros_ventana = len(records)
+
     return {
+        # v1 keys
         "balata_min_pct": balata_min,
         "odometro_km": odometro,
         "horas_motor_h": horas_motor,
         "total_spns_fuera_rango": total_oor,
         "total_anomalias": total_anomalias,
+        # v2 keys
+        "pct_presion_bajo_150": round(pct_presion_bajo_150, 6),
+        "pct_presion_bajo_50": round(pct_presion_bajo_50, 6),
+        "pct_temp_motor_sobre_115": round(pct_temp_motor_sobre_115, 6),
+        "pct_temp_motor_sobre_140": round(pct_temp_motor_sobre_140, 6),
+        "pct_voltaje_bajo_12": round(pct_voltaje_bajo_12, 6),
+        "pct_voltaje_sobre_15_5": round(pct_voltaje_sobre_15_5, 6),
+        "total_oor": total_oor,
+        "n_registros_ventana": n_registros_ventana,
     }
 
 
 def _build_csv_payload(features, fault_features, contextual_features, feature_names):
     """Build a CSV row matching the exact feature order expected by the model.
 
-    The feature_names list defines the column order. Each name follows one of:
-      - spn_{id}_{stat}_7d  (telemetry: avg, max, min, std, oor_count, anomaly_count)
-      - fault feature name  (fallas_criticas_30d, etc.)
-      - contextual feature  (balata_min_pct, etc.)
+    Supports both v1 (128 features, spn_{id}_{stat}_7d format) and v2
+    (~56 features, {nombre}_{stat} format) by detecting the naming convention
+    from the loaded feature_names.json.
+
+    Args:
+        features: SPN feature dict from _build_feature_vector().
+        fault_features: Dict from _build_fault_features().
+        contextual_features: Dict from _build_contextual_features().
+        feature_names: Ordered list of feature names from the model.
+
+    Returns:
+        CSV string with comma-separated values.
+    """
+    # Detect model version by checking feature name format
+    is_v2 = any(
+        name in SPNS_MODELO_V2.values() or
+        any(name.startswith(f"{alias}_") for alias in SPNS_MODELO_V2.values())
+        for name in feature_names[:5]
+    )
+
+    if is_v2:
+        return _build_csv_payload_v2(features, fault_features, contextual_features, feature_names)
+    else:
+        return _build_csv_payload_v1(features, fault_features, contextual_features, feature_names)
+
+
+def _build_csv_payload_v2(features, fault_features, contextual_features, feature_names):
+    """Build CSV payload for v2 model (~56 features).
+
+    v2 feature names use aliases like 'presion_aceite_avg', 'temp_motor_max',
+    plus threshold features like 'pct_presion_bajo_150' and fault/contextual
+    features.
+
+    Args:
+        features: SPN feature dict from _build_feature_vector().
+        fault_features: Dict from _build_fault_features() (v2 schema).
+        contextual_features: Dict with v2 threshold + contextual features.
+        feature_names: Ordered list of v2 feature names.
+
+    Returns:
+        CSV string.
+    """
+    # Build a flat dict of all v2 features for easy lookup
+    v2_features = {}
+
+    # SPN-based features: {alias}_{stat} → value
+    v2_stat_map = {"avg": "avg", "max": "max", "min": "min", "oor": "out_of_range_count"}
+    for spn_id, alias in SPNS_MODELO_V2.items():
+        spn_feat = features.get(spn_id)
+        for v2_stat, internal_key in v2_stat_map.items():
+            key = f"{alias}_{v2_stat}"
+            if spn_feat and spn_feat.get("count", 0) > 0 and internal_key in spn_feat:
+                v2_features[key] = round(float(spn_feat[internal_key]), 6)
+            else:
+                v2_features[key] = 0
+
+    # Merge fault features and contextual features (threshold features included)
+    v2_features.update(fault_features)
+    v2_features.update(contextual_features)
+
+    values = []
+    for name in feature_names:
+        if name in v2_features:
+            values.append(str(v2_features[name]))
+        else:
+            values.append("0")
+
+    return ",".join(values)
+
+
+def _build_csv_payload_v1(features, fault_features, contextual_features, feature_names):
+    """Build CSV payload for v1 model (128 features, spn_{id}_{stat}_7d format).
 
     Args:
         features: SPN feature dict from _build_feature_vector().
@@ -457,9 +591,9 @@ def _classify_ml_risk(probability):
 def _invoke_sagemaker(features, fault_features, contextual_features, autobus):
     """Invoke the SageMaker XGBoost endpoint with a properly formatted CSV payload.
 
-    Builds the 128-feature CSV row in the exact order defined by
-    feature_names.json, sends it as text/csv, and parses the probability
-    output.
+    Loads the feature_names.json from S3 (v1 or v2) and builds the CSV row
+    in the exact order expected by the deployed model. Supports both v1
+    (128 features, spn_{id}_{stat}_7d) and v2 (~56 features, {alias}_{stat}).
 
     Args:
         features: SPN feature dict from _build_feature_vector().

@@ -1216,6 +1216,7 @@ Trigger:          Bedrock AgentCore (Action Group)
 SAGEMAKER_ENDPOINT:       ado-prediccion-eventos
 USE_HEURISTIC_FALLBACK:   "true"
 S3_CATALOGO_KEY:          hackathon-data/catalogo/motor_spn.json
+S3_FEATURE_NAMES_KEY:     hackathon-data/modelos/sagemaker-v2/training-data/feature_names.json
 ```
 
 ### Input
