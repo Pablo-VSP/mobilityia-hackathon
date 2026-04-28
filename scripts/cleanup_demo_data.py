@@ -24,11 +24,11 @@ def delete_all_items(table_name, session):
     key_names = [k["AttributeName"] for k in key_schema]
 
     print(f"  Escaneando {table_name}...")
-    scan_kwargs = {"ProjectionExpression": ", ".join(key_names)}
 
     total_deleted = 0
     while True:
-        response = table.scan(**scan_kwargs)
+        response = table.scan(ProjectionExpression="#pk, #sk",
+                              ExpressionAttributeNames={"#pk": key_names[0], "#sk": key_names[1]} if len(key_names) > 1 else {"#pk": key_names[0]})
         items = response.get("Items", [])
 
         if not items:
@@ -45,7 +45,6 @@ def delete_all_items(table_name, session):
 
         if "LastEvaluatedKey" not in response:
             break
-        scan_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
 
     return total_deleted
 
