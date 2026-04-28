@@ -313,6 +313,8 @@ def lambda_handler(event, context):
         "autobus": autobus,
         "ultimo_timestamp": latest_record.get("timestamp", ""),
         "registros_consultados": len(records),
+        "latitud": float(latest_record.get("latitud", 0) or 0),
+        "longitud": float(latest_record.get("longitud", 0) or 0),
         **trip_context,
         "variables_actuales": variables_actuales,
         "alertas_activas": alertas_activas,

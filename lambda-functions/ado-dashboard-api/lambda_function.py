@@ -228,9 +228,19 @@ def handle_resumen_consumo() -> dict:
 
     resumen_rutas = []
     for ruta, ruta_records in rutas.items():
-        # Compute average rendimiento
-        rendimientos = []
+        # Keep only the latest record per bus on this route
+        latest_per_bus: dict[str, dict] = {}
         for r in ruta_records:
+            bus = r.get("autobus", "")
+            ts = r.get("timestamp", "")
+            if bus not in latest_per_bus or ts > latest_per_bus[bus].get("timestamp", ""):
+                latest_per_bus[bus] = r
+
+        bus_records = list(latest_per_bus.values())
+
+        # Compute average rendimiento from latest record per bus
+        rendimientos = []
+        for r in bus_records:
             rend = r.get("rendimiento_kml")
             if rend is not None:
                 try:
@@ -244,17 +254,17 @@ def handle_resumen_consumo() -> dict:
             else None
         )
 
-        # Count by estado_consumo
+        # Count by estado_consumo (per bus, not per record)
         estados_count: dict[str, int] = defaultdict(int)
-        for r in ruta_records:
+        for r in bus_records:
             estado = r.get("estado_consumo", "SIN_DATOS")
             estados_count[estado] += 1
 
         # Unique buses on this route
-        buses_en_ruta = list({r.get("autobus", "") for r in ruta_records})
+        buses_en_ruta = list(latest_per_bus.keys())
 
-        # Determine overall route efficiency
-        total = len(ruta_records)
+        # Determine overall route efficiency (based on bus count)
+        total = len(bus_records)
         eficientes = estados_count.get("EFICIENTE", 0)
         if total > 0 and eficientes / total >= 0.7:
             eficiencia_ruta = "EFICIENTE"

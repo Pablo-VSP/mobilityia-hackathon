@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { sendChatMessage } from '../lib/api';
 import ChatBubble from '../components/ChatBubble';
-import { MessageSquare, Send, Bot, Fuel, Wrench } from 'lucide-react';
+import { MessageSquare, Send, Bot, Fuel, Wrench, Zap } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -13,17 +13,16 @@ interface Message {
 }
 
 const suggestedQuestions = [
-  { text: '¿Qué buses tienen mayor consumo?', agente: 'combustible', icon: Fuel },
-  { text: '¿Qué buses tienen riesgo mecánico?', agente: 'mantenimiento', icon: Wrench },
-  { text: '¿Cuáles son las alertas prioritarias?', agente: 'mantenimiento', icon: Wrench },
-  { text: '¿Cómo está la eficiencia de la flota?', agente: 'combustible', icon: Fuel },
+  { text: '¿Qué buses tienen mayor consumo y cuáles tienen riesgo mecánico?', icon: Zap },
+  { text: '¿Cuál es el estado general de la flota ahora mismo?', icon: Zap },
+  { text: 'Analiza el bus 7313: consumo y estado mecánico', icon: Zap },
+  { text: '¿Qué alertas prioritarias hay y qué las está causando?', icon: Zap },
 ];
 
 export default function ChatPage() {
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [agente, setAgente] = useState<'combustible' | 'mantenimiento'>('combustible');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,8 +30,12 @@ export default function ChatPage() {
   // Pre-fill from bus selection on map
   useEffect(() => {
     const bus = searchParams.get('bus');
+    const context = searchParams.get('context');
     if (bus && messages.length === 0) {
-      setInput(`Analiza el estado del bus ${bus}`);
+      const prompt = context
+        ? `Analiza el bus ${bus}. Contexto: ${context}`
+        : `Analiza el estado completo del bus ${bus}: consumo de combustible y estado mecánico`;
+      setInput(prompt);
       inputRef.current?.focus();
     }
   }, [searchParams, messages.length]);
@@ -41,24 +44,23 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = async (text?: string, agenteOverride?: string) => {
+  const handleSend = async (text?: string) => {
     const prompt = text || input.trim();
     if (!prompt || sending) return;
 
-    const selectedAgente = agenteOverride || agente;
     const userMsgId = Date.now().toString();
     const assistantMsgId = (Date.now() + 1).toString();
 
     setMessages(prev => [
       ...prev,
       { id: userMsgId, role: 'user', content: prompt },
-      { id: assistantMsgId, role: 'assistant', content: '', agente: selectedAgente, loading: true },
+      { id: assistantMsgId, role: 'assistant', content: '', agente: 'ambos', loading: true },
     ]);
     setInput('');
     setSending(true);
 
     try {
-      const response = await sendChatMessage(prompt, selectedAgente);
+      const response = await sendChatMessage(prompt, 'ambos');
       setMessages(prev =>
         prev.map(m =>
           m.id === assistantMsgId
@@ -85,31 +87,16 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <MessageSquare className="w-6 h-6 text-red-400" />
-          <div>
-            <h1 className="text-white font-bold">Chat con Agentes IA</h1>
-            <p className="text-slate-400 text-xs">Consulta sobre combustible o mantenimiento</p>
-          </div>
-        </div>
-        <div className="flex bg-slate-800 rounded-lg p-1">
-          <button
-            onClick={() => setAgente('combustible')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-              agente === 'combustible' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Fuel className="w-4 h-4" /> Combustible
-          </button>
-          <button
-            onClick={() => setAgente('mantenimiento')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-              agente === 'mantenimiento' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Wrench className="w-4 h-4" /> Mantenimiento
-          </button>
+      <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex items-center gap-3 shrink-0">
+        <MessageSquare className="w-6 h-6 text-red-400" />
+        <div>
+          <h1 className="text-white font-bold">Chat con Agentes IA</h1>
+          <p className="text-slate-400 text-xs flex items-center gap-2">
+            <span className="flex items-center gap-1"><Fuel className="w-3 h-3 text-amber-400" /> Combustible</span>
+            <span className="text-slate-600">+</span>
+            <span className="flex items-center gap-1"><Wrench className="w-3 h-3 text-blue-400" /> Mantenimiento</span>
+            <span className="text-slate-600">— respuesta unificada</span>
+          </p>
         </div>
       </div>
 
@@ -120,14 +107,14 @@ export default function ChatPage() {
             <Bot className="w-16 h-16 text-slate-600 mb-4" />
             <h2 className="text-white text-xl font-bold mb-2">ADO MobilityIA</h2>
             <p className="text-slate-400 mb-6 max-w-md">
-              Pregunta sobre el estado de la flota, consumo de combustible,
-              riesgo mecánico o recomendaciones de mantenimiento.
+              Ambos agentes responden a tu pregunta simultáneamente.
+              Combustible analiza consumo y eficiencia. Mantenimiento evalúa riesgo mecánico.
             </p>
             <div className="grid grid-cols-2 gap-3 max-w-lg">
               {suggestedQuestions.map((q, i) => (
                 <button
                   key={i}
-                  onClick={() => handleSend(q.text, q.agente)}
+                  onClick={() => handleSend(q.text)}
                   className="flex items-center gap-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left text-sm text-slate-300 transition-colors"
                 >
                   <q.icon className="w-4 h-4 text-slate-500 shrink-0" />
@@ -159,7 +146,7 @@ export default function ChatPage() {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Pregunta sobre la flota..."
+            placeholder="Pregunta sobre la flota — ambos agentes responden..."
             disabled={sending}
             className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-50"
           />

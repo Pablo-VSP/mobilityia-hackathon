@@ -1,0 +1,25 @@
+version: 1
+applications:
+  - appRoot: dashboard
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+    buildSettings:
+      environmentVariables:
+        VITE_API_BASE_URL: 'https://sutgpijmoh.execute-api.us-east-2.amazonaws.com'
+        VITE_CHAT_STREAM_URL: 'https://ivlaj734gxomoqt57qdsczwkr40gedxy.lambda-url.us-east-2.on.aws/'
+        VITE_COGNITO_USER_POOL_ID: 'us-east-2_5itNQjtYP'
+        VITE_COGNITO_CLIENT_ID: '7f05s6kerku5ejb58odjj4b1fl'
+        VITE_AWS_REGION: 'us-east-2'
