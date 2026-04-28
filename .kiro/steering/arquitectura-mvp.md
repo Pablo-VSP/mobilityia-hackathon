@@ -20,40 +20,47 @@ inclusion: always
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  DATOS SIMULADOS (C-004)                                    │
-│  Script generador de datos ──────────────► Amazon S3        │
-│  (Python — telemetría y fallas simuladas)   (Data Lake)     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+│  FRONTEND — React + Tailwind + Leaflet                      │
+│  S3 + CloudFront (https://d1zr7g3ygmf5pk.cloudfront.net)   │
+│  Login: Amazon Cognito JWT                                  │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ HTTPS
+                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  SIMULADOR DE TIEMPO REAL (C-002)                           │
-│  AWS Lambda ──► Lee S3 ──► Escribe DynamoDB (estado live)   │
-│  (dispara cada N segundos, simula bus en movimiento)        │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  NÚCLEO DE IA — Amazon Bedrock AgentCore (C-005)              │
+│  API GATEWAY HTTP API (JWT Authorizer — Cognito)            │
+│  https://sutgpijmoh.execute-api.us-east-2.amazonaws.com     │
 │                                                             │
-│  ┌─────────────────────┐  ┌─────────────────────────────┐  │
-│  │ Agente Combustible  │  │ Agente Mantenimiento        │  │
-│  │ • Lee DynamoDB      │  │ • Lee DynamoDB (OBD)        │  │
-│  │ • Detecta desv.     │  │ • Consulta Knowledge Base   │  │
-│  │ • Claude → alerta   │  │ • SageMaker → predicción    │  │
-│  │   en español        │  │ • Claude → recomendación    │  │
-│  └─────────────────────┘  └─────────────────────────────┘  │
-│                                                             │
-│  Knowledge Bases (RAG): manuales OBD simulados,            │
-│  normas NOM-044, umbrales de eficiencia por ruta           │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+│  GET /dashboard/*  →  ado-dashboard-api (Lambda)            │
+│  POST /chat        →  ado-chat-api (Lambda) → AgentCore    │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+┌──────────────────┐ ┌──────────┐ ┌──────────────────────┐
+│  DynamoDB        │ │ AgentCore│ │  SageMaker           │
+│  ado-telemetria  │ │ 2 Agentes│ │  XGBoost (128 feat)  │
+│  ado-alertas     │ │ + KB RAG │ │  ado-prediccion      │
+└────────┬─────────┘ └────┬─────┘ └──────────────────────┘
+         │                │
+         │                ▼
+         │         ┌──────────────┐
+         │         │  7 Lambda    │
+         │         │  Tools       │
+         │         └──────┬───────┘
+         │                │
+         ▼                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  PRESENTACIÓN                                               │
-│  Amazon QuickSight ──► Dashboard ejecutivo + CO₂           │
-│  (o Streamlit/Amplify si QuickSight no está disponible)    │
+│  S3 — ado-telemetry-mvp (Data Lake)                         │
+│  Datos simulados, catálogos, Knowledge Base, modelo ML      │
 └─────────────────────────────────────────────────────────────┘
+         ▲
+         │
+┌────────┴────────┐
+│  Simulador      │
+│  Lambda (3 buses│
+│  desfase 15%,   │
+│  27 SPNs, GPS)  │
+└─────────────────┘
 ```
 
 ---
@@ -78,19 +85,20 @@ Script generador (Python)
 ## Servicios AWS del MVP (lista definitiva)
 
 ### Incluidos ✅
-| Servicio | Rol en el MVP | Prioridad |
+| Servicio | Rol en el MVP | Estado |
 |---|---|---|
-| **Amazon S3** | Data Lake — datos **simulados** (C-004) | 🔴 Crítico |
-| **AWS Lambda** | Simulador de ingesta en tiempo real (C-002) | 🔴 Crítico |
-| **Amazon DynamoDB** | Estado en tiempo real por unidad | 🔴 Crítico |
-| **Amazon Bedrock AgentCore** | Orquestación de los 2 agentes autónomos | 🔴 Crítico |
-| **Amazon Bedrock Knowledge Bases** | RAG con documentos técnicos | 🔴 Crítico |
-| **Amazon Bedrock Guardrails** | Seguridad básica de respuestas | 🟡 Importante |
-| **Anthropic Claude 3.5 Sonnet** | Narrativas en español | 🔴 Crítico |
-| **Amazon SageMaker** | Modelo predictivo entrenado con datos simulados | 🟡 Importante |
-| **Amazon QuickSight** | Dashboard demo para el jurado | 🟡 Importante |
-| **AWS IAM** | Roles y permisos entre servicios | 🔴 Crítico |
-| **Amazon CloudWatch** | Logs básicos para debugging | 🟡 Importante |
+| **Amazon S3** | Data Lake — datos **simulados** (C-004) en `ado-telemetry-mvp` | ✅ Activo |
+| **AWS Lambda** | 10 funciones: simulador + 7 tools + dashboard API + chat API | ✅ Activo |
+| **Amazon DynamoDB** | Estado en tiempo real por unidad + alertas | ✅ Activo |
+| **Amazon Bedrock AgentCore** | 2 agentes autónomos (Combustible + Mantenimiento) | ✅ Activo |
+| **Amazon Bedrock Knowledge Bases** | RAG con 5 documentos técnicos | ✅ Activo |
+| **Anthropic Claude 3.5 Sonnet** | Modelo de lenguaje para los agentes | ✅ Activo |
+| **Amazon SageMaker** | Modelo XGBoost predictivo (128 features, AUC 0.969) | ✅ InService |
+| **Amazon API Gateway** | HTTP API con JWT authorizer (Cognito) | ✅ Activo |
+| **Amazon Cognito** | Autenticación de usuarios del dashboard | ✅ Activo |
+| **Amazon CloudFront** | CDN para frontend React | ✅ Desplegado |
+| **AWS IAM** | Roles y permisos entre servicios | ✅ Activo |
+| **Amazon CloudWatch** | Logs de todas las Lambdas | ✅ Activo |
 
 ### Excluidos del MVP ❌ (por C-001 y C-002)
 | Servicio | Razón de exclusión |

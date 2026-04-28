@@ -41,3 +41,5 @@ logs/
 
 # Data — archivos pesados (descargar manualmente desde carpeta compartida en la nube)
 data/consolidated_telemetry.parquet
+dashboard/node_modules/
+dashboard/dist/

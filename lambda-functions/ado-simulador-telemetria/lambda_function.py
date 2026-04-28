@@ -1,9 +1,15 @@
 """
 ado-simulador-telemetria — Simulador de telemetría en tiempo real.
 
-Lee registros de telemetría simulada desde S3, los pivotea en estado
-consolidado por autobús usando el catálogo SPN, clasifica el consumo
-de combustible y escribe el estado en DynamoDB.
+Lee viajes pre-procesados desde S3 (viajes_consolidados.json) y simula
+múltiples buses avanzando simultáneamente por sus rutas con desfase
+temporal. Cada invocación escribe un frame por bus en DynamoDB.
+
+Los viajes se reproducen en loop: cuando un bus llega al final de su
+viaje, reinicia desde el frame 0.
+
+Desfase temporal: cada bus arranca con un offset diferente para que
+no vayan todos juntos en la misma posición de la ruta.
 
 Requisitos: 2.1–2.10, 11.3, 11.5
 """
@@ -13,364 +19,335 @@ import logging
 import os
 import time
 from datetime import datetime, timezone
+from functools import lru_cache
 
-from ado_common.constants import SPN_RENDIMIENTO, SPN_TASA_COMBUSTIBLE
-from ado_common.spn_catalog import cargar_catalogo_spn
-from ado_common.telemetry_pivot import pivotar_telemetria
+import boto3
+
+from ado_common.spn_catalog import cargar_catalogo_spn, valor_fuera_de_rango
 from ado_common.dynamo_utils import batch_write_items
-from ado_common.s3_utils import read_json_from_s3, list_objects
+from ado_common.s3_utils import read_json_from_s3
+from ado_common.constants import SPN_RENDIMIENTO, SPN_TASA_COMBUSTIBLE
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+# ---------------------------------------------------------------------------
+# Environment variables
+# ---------------------------------------------------------------------------
+S3_BUCKET = os.environ.get("S3_BUCKET", "ado-telemetry-mvp")
+S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "hackathon-data/catalogo/motor_spn.json")
+S3_VIAJES_KEY = os.environ.get(
+    "S3_VIAJES_KEY",
+    "hackathon-data/simulacion/viajes_consolidados.json",
+)
+DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "ado-telemetria-live")
+
+# How many seconds of trip time each Lambda invocation advances.
+# At rate(10 seconds) trigger, STEP=30 means 3x speedup (5h trip in ~1.7h).
+STEP_SECONDS = int(os.environ.get("STEP_SECONDS", "30"))
+
+# Desfase entre buses: bus 0 starts at 0%, bus 1 at DESFASE%, bus 2 at 2*DESFASE%
+# 15% means ~45 min apart on a 5h trip
+DESFASE_PCT = int(os.environ.get("DESFASE_PCT", "15"))
 
 # ---------------------------------------------------------------------------
-# Clasificación de consumo de combustible (Req 2.5)
+# Cached data loaders
+# ---------------------------------------------------------------------------
+_viajes_data = None
+
+
+def _load_viajes():
+    """Load consolidated trips from S3 (cached across warm invocations)."""
+    global _viajes_data
+    if _viajes_data is None:
+        logger.info(json.dumps({
+            "action": "load_viajes",
+            "bucket": S3_BUCKET,
+            "key": S3_VIAJES_KEY,
+        }))
+        _viajes_data = read_json_from_s3(S3_BUCKET, S3_VIAJES_KEY)
+    return _viajes_data
+
+
+# ---------------------------------------------------------------------------
+# Consumption classification
 # ---------------------------------------------------------------------------
 
 def clasificar_consumo(spn_valores: dict) -> str:
-    """Clasifica el estado de consumo de combustible a partir de los SPNs disponibles.
+    """Classify fuel consumption state from SPN values.
 
-    Lógica de clasificación:
-      - **Primario** — SPN 185 (Rendimiento km/L):
-            ≥ 3.0  → EFICIENTE
-            2.0–3.0 → ALERTA_MODERADA
-            < 2.0  → ALERTA_SIGNIFICATIVA
-      - **Fallback** — SPN 183 (Tasa de combustible L/h):
-            ≤ 30   → EFICIENTE
-            30–50  → ALERTA_MODERADA
-            > 50   → ALERTA_SIGNIFICATIVA
-      - Si ninguno de los dos SPNs está disponible → SIN_DATOS
-
-    Args:
-        spn_valores: Diccionario con claves string de SPN IDs.
-                     Cada valor es un dict con al menos ``{"valor": float}``.
-
-    Returns:
-        Una de: ``EFICIENTE``, ``ALERTA_MODERADA``,
-        ``ALERTA_SIGNIFICATIVA`` o ``SIN_DATOS``.
+    Priority: SPN 185 (Rendimiento km/L) > SPN 183 (Tasa combustible L/h).
     """
-    # --- Intento primario: SPN 185 (Rendimiento km/L) ---
-    spn_rendimiento = spn_valores.get(str(SPN_RENDIMIENTO))
-    if spn_rendimiento is not None:
-        rendimiento = spn_rendimiento.get("valor")
-        if rendimiento is not None:
-            rendimiento = float(rendimiento)
-            if rendimiento >= 3.0:
+    spn_rend = spn_valores.get(str(SPN_RENDIMIENTO))
+    if spn_rend is not None:
+        val = spn_rend.get("valor")
+        if val is not None:
+            val = float(val)
+            if val >= 3.0:
                 return "EFICIENTE"
-            if rendimiento >= 2.0:
+            if val >= 2.0:
                 return "ALERTA_MODERADA"
             return "ALERTA_SIGNIFICATIVA"
 
-    # --- Fallback: SPN 183 (Tasa de combustible L/h) ---
     spn_tasa = spn_valores.get(str(SPN_TASA_COMBUSTIBLE))
     if spn_tasa is not None:
-        tasa = spn_tasa.get("valor")
-        if tasa is not None:
-            tasa = float(tasa)
-            if tasa <= 30.0:
+        val = spn_tasa.get("valor")
+        if val is not None:
+            val = float(val)
+            if val <= 30.0:
                 return "EFICIENTE"
-            if tasa <= 50.0:
+            if val <= 50.0:
                 return "ALERTA_MODERADA"
             return "ALERTA_SIGNIFICATIVA"
 
-    # --- Ningún SPN disponible ---
     return "SIN_DATOS"
 
 
 # ---------------------------------------------------------------------------
-# Helpers (Req 2.1, 2.6)
+# Frame selection with offset
 # ---------------------------------------------------------------------------
 
-# Environment variables (Req 11.5)
-NUM_BUSES = int(os.environ.get("NUM_BUSES", "20"))
-S3_BUCKET = os.environ.get("S3_BUCKET", "ado-telemetry-mvp")
-S3_TELEMETRIA_PREFIX = os.environ.get("S3_TELEMETRIA_PREFIX", "hackathon-data/telemetria-simulada/")
-S3_CATALOGO_KEY = os.environ.get("S3_CATALOGO_KEY", "hackathon-data/catalogo/motor_spn.json")
-DYNAMODB_TABLE = os.environ.get("DYNAMODB_TABLE", "ado-telemetria-live")
+def _get_frame_for_bus(viaje: dict, bus_index: int, ahora: float) -> dict:
+    """Select the current frame for a bus based on elapsed time + desfase.
 
-# Temporal window size in seconds for grouping records (~30s)
-VENTANA_TEMPORAL_SEGUNDOS = 30
-
-
-def _listar_archivos_telemetria(bucket: str, prefix: str) -> list[str]:
-    """Lista los archivos JSON de telemetría disponibles en S3.
+    The bus loops through its trip frames. Each bus has a different
+    starting offset so they don't overlap on the route.
 
     Args:
-        bucket: Nombre del bucket S3.
-        prefix: Prefijo bajo el cual buscar archivos.
+        viaje: Trip dict with "frames" and "duracion_segundos".
+        bus_index: Index of this bus (0, 1, 2...) for desfase calculation.
+        ahora: Current unix timestamp.
 
     Returns:
-        Lista de claves S3 filtradas a archivos JSON.
+        The frame dict for this bus at this moment.
     """
-    keys = list_objects(bucket, prefix)
-    # Filtrar solo archivos JSON (excluir directorios/prefijos vacíos)
-    return [k for k in keys if k.endswith(".json") or k.endswith(".JSON")]
+    frames = viaje["frames"]
+    total_frames = len(frames)
+    duracion = viaje["duracion_segundos"]
 
+    if total_frames == 0 or duracion == 0:
+        return frames[0] if frames else {}
 
-def _leer_bloque_telemetria(
-    bucket: str,
-    key: str,
-    offset: int,
-    block_size: int = 50,
-) -> list[dict]:
-    """Lee un bloque de registros de telemetría desde un archivo S3.
+    # Desfase: shift each bus by DESFASE_PCT% of the trip duration
+    desfase_segundos = int(duracion * (DESFASE_PCT / 100.0) * bus_index)
 
-    Carga el archivo completo y extrae un bloque circular de registros
-    a partir del offset dado.
+    # Elapsed seconds in the simulation (with speedup via STEP_SECONDS)
+    # We use wall clock time so the simulation is stateless
+    elapsed = (int(ahora) * STEP_SECONDS // 10) + desfase_segundos
 
-    Args:
-        bucket: Nombre del bucket S3.
-        key: Clave del archivo JSON en S3.
-        offset: Índice de inicio dentro del archivo.
-        block_size: Cantidad de registros a extraer.
+    # Position in the trip (looping)
+    posicion_en_viaje = elapsed % duracion
 
-    Returns:
-        Lista de registros de telemetría (dicts).
-    """
-    data = read_json_from_s3(bucket, key)
-    if not isinstance(data, list) or len(data) == 0:
-        return []
-
-    total = len(data)
-    # Extracción circular
-    registros = []
-    for i in range(block_size):
-        idx = (offset + i) % total
-        registros.append(data[idx])
-    return registros
-
-
-def _agrupar_por_ventana_temporal(
-    registros: list[dict],
-    ventana_segundos: int = VENTANA_TEMPORAL_SEGUNDOS,
-) -> list[list[dict]]:
-    """Agrupa registros de telemetría por ventana temporal.
-
-    Ordena los registros por evento_fecha_hora y los agrupa en ventanas
-    de aproximadamente `ventana_segundos` segundos.
-
-    Args:
-        registros: Lista de registros con campo evento_fecha_hora.
-        ventana_segundos: Tamaño de la ventana en segundos.
-
-    Returns:
-        Lista de grupos, donde cada grupo es una lista de registros.
-    """
-    if not registros:
-        return []
-
-    # Intentar ordenar por evento_fecha_hora
-    def _parse_ts(r):
-        ts = r.get("evento_fecha_hora", "")
-        if isinstance(ts, str) and ts:
-            try:
-                return datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
-            except (ValueError, TypeError):
-                pass
-        return 0.0
-
-    sorted_records = sorted(registros, key=_parse_ts)
-
-    grupos: list[list[dict]] = []
-    grupo_actual: list[dict] = []
-    ts_inicio: float | None = None
-
-    for registro in sorted_records:
-        ts = _parse_ts(registro)
-        if ts_inicio is None:
-            ts_inicio = ts
-
-        if ts - ts_inicio > ventana_segundos and grupo_actual:
-            grupos.append(grupo_actual)
-            grupo_actual = [registro]
-            ts_inicio = ts
+    # Find the frame closest to this position
+    # Binary search since frames are sorted by segundos_desde_inicio
+    lo, hi = 0, total_frames - 1
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if frames[mid]["segundos_desde_inicio"] <= posicion_en_viaje:
+            lo = mid
         else:
-            grupo_actual.append(registro)
+            hi = mid - 1
 
-    if grupo_actual:
-        grupos.append(grupo_actual)
-
-    return grupos
+    return frames[lo]
 
 
 # ---------------------------------------------------------------------------
-# Lambda handler (Req 2.1–2.10, 11.3, 11.5)
+# Build DynamoDB item from frame
+# ---------------------------------------------------------------------------
+
+# Map SPN IDs to short field names for flat DynamoDB attributes
+_SPN_FLAT_NAMES = {
+    "84": "velocidad_kmh",
+    "190": "rpm",
+    "91": "pct_acelerador",
+    "521": "pct_freno",
+    "183": "tasa_combustible_lh",
+    "185": "rendimiento_kml",
+    "184": "ahorro_instantaneo_kml",
+    "96": "nivel_combustible_pct",
+    "110": "temperatura_motor_c",
+    "175": "temperatura_aceite_c",
+    "100": "presion_aceite_kpa",
+    "98": "nivel_aceite_pct",
+    "111": "nivel_anticongelante_pct",
+    "168": "voltaje_bateria_v",
+    "513": "torque_pct",
+    "917": "odometro_km",
+    "247": "horas_motor_h",
+    "1761": "nivel_urea_pct",
+    "1099": "balata_del_izq_pct",
+    "1100": "balata_del_der_pct",
+    "1101": "balata_tras_izq1_pct",
+    "1102": "balata_tras_der1_pct",
+    "1103": "balata_tras_izq2_pct",
+    "1104": "balata_tras_der2_pct",
+}
+
+
+def _build_dynamo_item(viaje: dict, frame: dict, catalogo_spn: dict, timestamp_iso: str, ttl: int) -> dict:
+    """Build a DynamoDB item from a trip + frame.
+
+    Includes:
+      - Trip context (autobus, operador, ruta, GPS)
+      - spn_valores map with fuera_de_rango flags
+      - Flat SPN fields for direct queries
+      - alertas_spn list
+      - estado_consumo classification
+      - TTL
+    """
+    spn_valores = {}
+    alertas_spn = []
+    campos_planos = {}
+
+    for spn_key, spn_data in frame.get("spn_valores", {}).items():
+        spn_id = int(spn_key)
+        valor = spn_data.get("valor", 0)
+        nombre = spn_data.get("name", f"SPN_{spn_id}")
+        unidad = spn_data.get("unidad", "")
+
+        # Check out of range using catalog
+        fuera, mensaje = valor_fuera_de_rango(catalogo_spn, spn_id, float(valor))
+
+        spn_valores[spn_key] = {
+            "valor": valor,
+            "name": nombre,
+            "unidad": unidad,
+            "fuera_de_rango": fuera,
+        }
+
+        if fuera:
+            alertas_spn.append({
+                "spn_id": spn_id,
+                "name": nombre,
+                "valor": valor,
+                "unidad": unidad,
+                "mensaje": mensaje,
+            })
+
+        # Flat field
+        flat_name = _SPN_FLAT_NAMES.get(spn_key)
+        if flat_name:
+            campos_planos[flat_name] = valor
+
+    estado_consumo = clasificar_consumo(spn_valores)
+
+    item = {
+        "autobus": str(viaje["autobus"]),
+        "timestamp": timestamp_iso,
+        "viaje_id": viaje["viaje_id"],
+        "operador_cve": viaje.get("operador_cve", ""),
+        "operador_desc": viaje.get("operador_desc", ""),
+        "viaje_ruta": viaje.get("viaje_ruta", ""),
+        "viaje_ruta_origen": viaje.get("viaje_ruta_origen", ""),
+        "viaje_ruta_destino": viaje.get("viaje_ruta_destino", ""),
+        "latitud": frame.get("latitud", 0),
+        "longitud": frame.get("longitud", 0),
+        "spn_valores": spn_valores,
+        "alertas_spn": alertas_spn,
+        "estado_consumo": estado_consumo,
+        "ttl_expiry": ttl,
+        **campos_planos,
+    }
+
+    return item
+
+
+# ---------------------------------------------------------------------------
+# Lambda handler
 # ---------------------------------------------------------------------------
 
 def lambda_handler(event, context):
-    """Punto de entrada del simulador de telemetría.
+    """Simulate real-time telemetry for multiple buses.
 
-    Flujo de ejecución:
-      1. Carga el catálogo SPN desde S3 (cacheado via lru_cache).
-      2. Lista los archivos de telemetría disponibles en S3.
-      3. Para cada uno de los NUM_BUSES autobuses:
-         a. Calcula un offset estacionario para ciclar por los registros.
-         b. Lee un bloque de registros de telemetría desde S3.
-         c. Agrupa los registros por ventana temporal (~30s).
-         d. Pivotea los registros en estado consolidado.
-         e. Clasifica el consumo de combustible.
-         f. Establece TTL de 24 horas.
-      4. Escribe todos los estados en DynamoDB via batch_write_items.
-      5. Registra un resumen en formato JSON estructurado.
+    Each invocation:
+      1. Loads consolidated trips from S3 (cached).
+      2. Loads SPN catalog (cached).
+      3. For each trip/bus, selects the current frame based on wall clock
+         time + per-bus desfase.
+      4. Builds DynamoDB items with pivoted SPNs, alerts, consumption state.
+      5. Batch writes all items to DynamoDB.
 
-    Args:
-        event: Evento de EventBridge Scheduler (no se usa).
-        context: Contexto Lambda (no se usa).
-
-    Returns:
-        Diccionario con resumen de la ejecución.
+    Designed to be triggered by EventBridge Scheduler at rate(10 seconds).
     """
     ahora = time.time()
     timestamp_iso = datetime.now(timezone.utc).isoformat()
+    ttl = int(ahora) + 86400
 
-    # --- 1. Cargar catálogo SPN (Req 2.2, 2.9) ---
+    # --- 1. Load trips ---
+    try:
+        data = _load_viajes()
+        viajes = data.get("viajes", [])
+    except Exception as exc:
+        logger.error(json.dumps({
+            "action": "load_viajes",
+            "error": str(exc),
+        }))
+        return {"statusCode": 200, "body": json.dumps({"status": "error", "reason": str(exc)})}
+
+    if not viajes:
+        return {"statusCode": 200, "body": json.dumps({"status": "skipped", "reason": "No trips"})}
+
+    # --- 2. Load SPN catalog ---
     try:
         catalogo_spn = cargar_catalogo_spn(S3_BUCKET, S3_CATALOGO_KEY)
     except Exception as exc:
         logger.error(json.dumps({
-            "action": "lambda_handler",
-            "error": "catalogo_spn_load_failed",
-            "detail": str(exc),
-            "bucket": S3_BUCKET,
-            "key": S3_CATALOGO_KEY,
+            "action": "load_catalogo",
+            "error": str(exc),
         }))
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "status": "skipped",
-                "reason": "SPN catalog load failure",
-            }),
-        }
+        return {"statusCode": 200, "body": json.dumps({"status": "error", "reason": str(exc)})}
 
-    # --- 2. Listar archivos de telemetría en S3 ---
-    try:
-        archivos_telemetria = _listar_archivos_telemetria(S3_BUCKET, S3_TELEMETRIA_PREFIX)
-    except Exception as exc:
-        logger.error(json.dumps({
-            "action": "lambda_handler",
-            "error": "list_telemetry_files_failed",
-            "detail": str(exc),
-        }))
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "status": "skipped",
-                "reason": "Cannot list telemetry files from S3",
-            }),
-        }
-
-    if not archivos_telemetria:
-        logger.warning(json.dumps({
-            "action": "lambda_handler",
-            "warning": "no_telemetry_files",
-            "prefix": S3_TELEMETRIA_PREFIX,
-        }))
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "status": "skipped",
-                "reason": "No telemetry files found in S3",
-            }),
-        }
-
-    total_archivos = len(archivos_telemetria)
-
-    # --- 3. Procesar cada autobús (Req 2.1, 2.6) ---
-    items_para_dynamo: list[dict] = []
-    buses_procesados = 0
-    buses_omitidos = 0
-
-    for bus_index in range(NUM_BUSES):
+    # --- 3. Process each bus ---
+    items = []
+    for bus_index, viaje in enumerate(viajes):
         try:
-            # 3a. Offset estacionario (Req 2.6)
-            archivo_index = bus_index % total_archivos
-            archivo_key = archivos_telemetria[archivo_index]
-
-            # Leer el archivo para obtener total_records y calcular offset
-            registros_raw = read_json_from_s3(S3_BUCKET, archivo_key)
-            if not isinstance(registros_raw, list) or len(registros_raw) == 0:
-                buses_omitidos += 1
-                continue
-
-            total_records = len(registros_raw)
-            offset = (int(ahora) // 10 + bus_index) % total_records
-
-            # 3b. Extraer bloque de registros desde el offset
-            block_size = min(50, total_records)
-            registros_bloque = []
-            for i in range(block_size):
-                idx = (offset + i) % total_records
-                registros_bloque.append(registros_raw[idx])
-
-            if not registros_bloque:
-                buses_omitidos += 1
-                continue
-
-            # 3c. Agrupar por ventana temporal (~30s)
-            grupos = _agrupar_por_ventana_temporal(registros_bloque)
-
-            # Usar el último grupo (más reciente) para el estado actual
-            registros_ventana = grupos[-1] if grupos else registros_bloque
-
-            # 3d. Pivotar telemetría (Req 2.2, 2.3)
-            estado = pivotar_telemetria(registros_ventana, catalogo_spn, solo_prioritarios=True)
-
-            if not estado:
-                buses_omitidos += 1
-                continue
-
-            # 3e. Clasificar consumo (Req 2.5)
-            spn_valores = estado.get("spn_valores", {})
-            estado["estado_consumo"] = clasificar_consumo(spn_valores)
-
-            # 3f. Establecer timestamp y TTL (Req 2.7)
-            estado["timestamp"] = timestamp_iso
-            estado["ttl_expiry"] = int(ahora) + 86400
-
-            items_para_dynamo.append(estado)
-            buses_procesados += 1
-
+            frame = _get_frame_for_bus(viaje, bus_index, ahora)
+            item = _build_dynamo_item(viaje, frame, catalogo_spn, timestamp_iso, ttl)
+            items.append(item)
         except Exception as exc:
-            # Req 2.10: Si falla la telemetría de un bus, saltar y continuar
             logger.warning(json.dumps({
                 "action": "process_bus",
-                "bus_index": bus_index,
+                "bus": viaje.get("autobus", "?"),
                 "error": str(exc),
-                "status": "skipped",
             }))
-            buses_omitidos += 1
-            continue
 
-    # --- 4. Escribir en DynamoDB (Req 2.4, 2.7) ---
+    # --- 4. Write to DynamoDB ---
     write_result = {}
-    if items_para_dynamo:
+    if items:
         try:
-            write_result = batch_write_items(DYNAMODB_TABLE, items_para_dynamo)
+            write_result = batch_write_items(DYNAMODB_TABLE, items)
         except Exception as exc:
             logger.error(json.dumps({
-                "action": "batch_write_dynamo",
+                "action": "batch_write",
                 "error": str(exc),
-                "items_count": len(items_para_dynamo),
+                "items_count": len(items),
             }))
 
-    # --- 5. Log resumen en formato JSON estructurado (Req 11.3) ---
+    # --- 5. Log summary ---
+    buses_info = []
+    for item in items:
+        buses_info.append({
+            "autobus": item["autobus"],
+            "estado": item["estado_consumo"],
+            "alertas": len(item.get("alertas_spn", [])),
+            "lat": item.get("latitud"),
+            "lon": item.get("longitud"),
+        })
+
     resumen = {
-        "action": "lambda_handler_summary",
+        "action": "simulador_summary",
         "timestamp": timestamp_iso,
-        "buses_procesados": buses_procesados,
-        "buses_omitidos": buses_omitidos,
+        "buses_simulados": len(items),
         "items_escritos": write_result.get("items_written", 0),
-        "archivos_telemetria": total_archivos,
+        "buses": buses_info,
     }
-    logger.info(json.dumps(resumen))
+    logger.info(json.dumps(resumen, default=str))
 
     return {
         "statusCode": 200,
         "body": json.dumps({
             "status": "success",
-            "buses_procesados": buses_procesados,
-            "buses_omitidos": buses_omitidos,
+            "buses_simulados": len(items),
             "items_escritos": write_result.get("items_written", 0),
         }),
     }

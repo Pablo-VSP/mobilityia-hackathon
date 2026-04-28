@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --ado-red: #c41230;
+  --ado-dark: #1a1a2e;
+  --ado-blue: #16213e;
+  --ado-accent: #0f3460;
+  --status-eficiente: #10b981;
+  --status-moderada: #f59e0b;
+  --status-significativa: #ef4444;
+  --status-critico: #dc2626;
+  --status-sin-datos: #6b7280;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Leaflet overrides for dark theme */
+.leaflet-container {
+  background: #1e293b;
+}
+.leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+  border: 1px solid #334155 !important;
+}
+.leaflet-popup-content {
+  margin: 12px 16px !important;
+  color: #e2e8f0 !important;
+}
+.leaflet-popup-content p,
+.leaflet-popup-content h3,
+.leaflet-popup-content span,
+.leaflet-popup-content div {
+  color: inherit !important;
+}
+.leaflet-popup-tip {
+  background: #1e293b !important;
+  border-top: 1px solid #334155 !important;
+}
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  font-size: 20px !important;
+  padding: 6px 8px !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #e2e8f0 !important;
+}
+.leaflet-control-zoom a {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #334155 !important;
+}
+.leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.8) !important;
+  color: #64748b !important;
+}
+.leaflet-control-attribution a {
+  color: #94a3b8 !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1e293b; }
+::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Typing animation for chat */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.typing-cursor::after {
+  content: '▊';
+  animation: blink 1s infinite;
+  color: var(--ado-red);
+}

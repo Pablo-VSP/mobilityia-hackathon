@@ -3,10 +3,9 @@ inclusion: always
 ---
 
 # 📅 Plan de Ejecución — ADO MobilityIA
-## Hackathon AWS Builders League 2026 — DÍA FINAL
+## Hackathon AWS Builders League 2026 — ESTADO FINAL
 
-> **Contexto:** Estamos en el último día de desarrollo. Las Lambdas están 100% codificadas.
-> Falta desplegar infraestructura AWS, conectar agentes de AgentCore y preparar la demo.
+> **Contexto:** Último día de desarrollo. El sistema está funcional end-to-end.
 > Los datos son **simulados** (C-004). Sin métricas numéricas específicas (C-003).
 > Los agentes son de **AgentCore** (C-005). Esquemas alineados con `models/` (C-006).
 
@@ -14,159 +13,201 @@ inclusion: always
 
 ## Estado actual del proyecto
 
-### ✅ Completado
-- 9 funciones Lambda codificadas, desplegadas y activas en us-east-2
+### ✅ COMPLETADO — Infraestructura
+- 10 funciones Lambda codificadas, desplegadas y activas en us-east-2
+  - Bucket de datos: `ado-telemetry-mvp` (todas las Lambdas apuntan aquí)
   - Bucket de Lambdas: `mobilityia-hackathon-bl-2026`
-  - Bucket de datos raw: `ado-telemetry-mvp`
+  - Bucket de frontend: `ado-mobilityia-dashboard`
 - Shared layer `ado-common-layer` (v2) desplegado
-- DynamoDB tablas creadas: `ado-telemetria-live`, `ado-alertas`
-- Knowledge Base creada: `ado-mobilityia-kb` (ID: `4OAVLRB8VI`) con 5 documentos indexados
-- Modelo XGBoost entrenado y endpoint desplegado: `ado-prediccion-eventos` (InService, 128 features)
-- 2 Agentes Bedrock creados y en estado PREPARED:
-  - `ado-agente-combustible` (ID: `5N3U0PMGXX`) — modelo: Nova Micro, 3 action groups
-  - `ado-agente-mantenimiento` (ID: `KLLFLAH0SJ`) — modelo: Nova Pro, 4 action groups
-- Catálogo de 36 SPNs confirmados con rangos y umbrales
-- Catálogo de fallas con `severidad_inferencia` clasificada (C-007)
-- 3 manuales completos subidos a S3 Knowledge Base
-- Documentación completa: steering files, prompts de agentes, esquemas de datos
+- DynamoDB tablas creadas y activas: `ado-telemetria-live`, `ado-alertas`
+- IAM rol `ado-lambda-execution-role` con permisos para DynamoDB, S3, SageMaker y AgentCore
 
-### ⚠️ Pendiente — Acciones inmediatas
-- **Knowledge Base NO asociada a los agentes** — Ambos agentes tienen 0 Knowledge Bases asociadas
-- **Verificar que el simulador apunte a datos de enero 2021** (C-008)
-- **Probar flujo end-to-end**: simulador → DynamoDB → agentes → respuesta
-- **Dashboard** (QuickSight o Streamlit)
+### ✅ COMPLETADO — Agentes de IA (AgentCore)
+- 2 Agentes desplegados en Amazon Bedrock AgentCore:
+  - `AdoCombustible` — Claude 3.5 Sonnet, 4 tools (telemetría, desviación, buses activos, KB)
+  - `AdoMantenimiento` — Claude 3.5 Sonnet, 5 tools (OBD, predicción ML, patrones, recomendación, KB)
+- Knowledge Base `ado-mobilityia-kb` (ID: `4OAVLRB8VI`) con 5 documentos indexados
+- Ambos agentes responden en español con lenguaje difuso (C-003)
 
-### 📋 IDs de recursos AWS (us-east-2, cuenta 084032333314)
+### ✅ COMPLETADO — Modelo ML (SageMaker)
+- Modelo XGBoost entrenado con 128 features (AUC-ROC: 0.969)
+- Endpoint `ado-prediccion-eventos` InService en ml.m5.large
+- Lambda `tool-predecir-evento` corregida para enviar CSV con 128 features en orden exacto
+- Fallback heurístico funcional cuando SageMaker no está disponible
+- Predicción ML verificada: score 0.873 para bus con señales anómalas
+
+### ✅ COMPLETADO — Simulación en Tiempo Real
+- 3 viajes reales pre-procesados desde Parquets (27 SPNs, ~2,400 frames cada uno)
+- Simulador reescrito: lee `viajes_consolidados.json`, desfase 15% entre buses, speedup 3x
+- Buses se mueven con GPS real a lo largo de la ruta México-Acapulco
+- Datos ricos en DynamoDB: 26 SPNs por registro, campos planos, alertas, estado de consumo
+
+### ✅ COMPLETADO — API Gateway + Cognito
+- API Gateway HTTP API con JWT authorizer (Cognito)
+- 5 endpoints protegidos: flota-status, alertas-activas, resumen-consumo, co2-estimado, chat
+- Cognito User Pool con usuario de demo: `demo@adomobilityia.com` / `DemoADO2026!`
+- CORS configurado para localhost:3000 y CloudFront
+
+### ✅ COMPLETADO — Chat con Agentes
+- Lambda `ado-chat-api` invoca agentes de AgentCore via SDK `bedrock-agentcore`
+- Auto-detección de agente por keywords del prompt
+- Parseo de respuesta SSE y limpieza de tags `<thinking>`
+- Endpoint POST /chat en API Gateway con JWT auth
+
+### ✅ COMPLETADO — Frontend React
+- Dashboard profesional con 5 vistas: Mapa, Alertas, Eficiencia, Ambiental, Chat
+- Mapa en vivo con Leaflet (dark theme, CARTO tiles)
+- Click en bus → popup con datos en tiempo real + botón "Preguntar al Agente"
+- Panel lateral con vehículos con alertas y recomendaciones de mantenimiento
+- Chat con efecto typing, markdown rendering, selector de agente
+- Login con Cognito (SRP auth)
+- Desplegado en S3 + CloudFront: `https://d1zr7g3ygmf5pk.cloudfront.net`
+
+### ✅ COMPLETADO — Ensayo End-to-End
+- Simulador → DynamoDB → Dashboard API → Frontend: verificado
+- Chat → AgentCore → Lambdas tools → DynamoDB/S3/SageMaker: verificado
+- Predicción ML con modelo_ml (no heurística): verificado
+- Cognito auth → API Gateway JWT: verificado
+- Todos los endpoints retornan datos correctos
+
+### ⚠️ PENDIENTE — Mejoras opcionales
+- [ ] EventBridge Scheduler para simulador automático (rate 10 seconds)
+- [ ] Datos "trampa" con señales anómalas para demo impactante
+- [ ] Function URL streaming para chat en tiempo real (403 pendiente de resolver)
+- [ ] Más viajes de ejemplo para simular más buses simultáneamente
+
+---
+
+## 📋 IDs de recursos AWS (us-east-2, cuenta 084032333314)
 
 | Recurso | ID / Nombre |
 |---|---|
-| Agente Combustible | `5N3U0PMGXX` (`ado-agente-combustible`) |
-| Agente Mantenimiento | `KLLFLAH0SJ` (`ado-agente-mantenimiento`) |
+| **Dashboard URL** | `https://d1zr7g3ygmf5pk.cloudfront.net` |
+| **API Gateway** | `https://sutgpijmoh.execute-api.us-east-2.amazonaws.com` |
+| CloudFront Distribution | `E1M19Q2U1SVAYR` |
+| Cognito User Pool | `us-east-2_5itNQjtYP` |
+| Cognito Client ID | `7f05s6kerku5ejb58odjj4b1fl` |
+| Agente Combustible ARN | `arn:aws:bedrock-agentcore:us-east-2:084032333314:runtime/AdoCombustible_AdoCombustible-BJ7Uvb4ozE` |
+| Agente Mantenimiento ARN | `arn:aws:bedrock-agentcore:us-east-2:084032333314:runtime/AdoMantenimiento_AdoMantenimiento-2sL9qkC3yK` |
 | Knowledge Base | `4OAVLRB8VI` (`ado-mobilityia-kb`) |
-| Data Source KB | `LL4E15XKR4` (`manuales-y-catalogos`) |
 | SageMaker Endpoint | `ado-prediccion-eventos` (InService) |
 | DynamoDB Telemetría | `ado-telemetria-live` |
 | DynamoDB Alertas | `ado-alertas` |
-| Bucket datos raw | `ado-telemetry-mvp` |
+| Bucket datos | `ado-telemetry-mvp` |
 | Bucket lambdas | `mobilityia-hackathon-bl-2026` |
-| Lambda Simulador | `ado-simulador-telemetria` |
-| Lambda Predecir | `tool-predecir-evento` (SAGEMAKER_ENDPOINT=ado-prediccion-eventos) |
-| Rol Agentes | `ado-bedrock-agent-role` |
+| Bucket frontend | `ado-mobilityia-dashboard` |
 | Rol Lambdas | `ado-lambda-execution-role` |
 
 ---
 
-## Plan del día — Bloques de trabajo
+## Flujo de la demo
 
-### BLOQUE 1 — Infraestructura base ✅ COMPLETADO
-> S3 + DynamoDB + Lambdas desplegadas por compañero de equipo.
+### Guión recomendado (5 minutos)
 
-#### 1.1 Infraestructura ✅
-- [x] Bucket S3 `mobilityia-hackathon-bl-2026` (lambdas y catálogos)
-- [x] Bucket S3 `ado-telemetry-mvp` (datos raw)
-- [x] Tabla DynamoDB `ado-telemetria-live`
-- [x] Tabla DynamoDB `ado-alertas`
-- [x] Roles IAM: `ado-lambda-execution-role`, `ado-bedrock-agent-role`
+1. **Login** (30s)
+   - Abrir `https://d1zr7g3ygmf5pk.cloudfront.net`
+   - Ingresar con `demo@adomobilityia.com`
 
-#### 1.2 Datos en S3 ✅
-- [x] Datos de telemetría (1,339 archivos Parquet, ~447 MB, 27.4M registros)
-- [x] Datos de fallas (123 archivos Parquet, ~6.5 MB, 550K registros)
-- [x] Catálogo SPN (1 archivo Parquet, 37 variables)
-- [x] 3 manuales + 2 catálogos en Knowledge Base S3
+2. **Mapa en Vivo** (1 min)
+   - Mostrar 3 buses moviéndose en la ruta México-Acapulco
+   - Señalar los colores: verde (eficiente), rojo (alerta)
+   - Click en un bus con alerta → popup con datos en tiempo real
 
-#### 1.3 Lambdas desplegadas ✅
-- [x] `ado-simulador-telemetria` (512 MB, 30s timeout)
-- [x] `tool-consultar-telemetria`
-- [x] `tool-calcular-desviacion`
-- [x] `tool-listar-buses-activos`
-- [x] `tool-consultar-obd`
-- [x] `tool-predecir-evento` (SAGEMAKER_ENDPOINT=ado-prediccion-eventos)
-- [x] `tool-buscar-patrones-historicos`
-- [x] `tool-generar-recomendacion`
-- [x] `ado-dashboard-api`
-- [x] Layer `ado-common-layer` v2
+3. **Chat con Agente de Combustible** (1 min)
+   - Desde el popup, click "Preguntar al Agente IA"
+   - El agente analiza el bus y detecta desviaciones
+   - Mostrar el efecto typing y la respuesta en español
 
-### BLOQUE 2 — Agentes Bedrock (⚠️ PARCIALMENTE COMPLETADO)
-> **Pendiente crítico:** Asociar Knowledge Base a ambos agentes.
+4. **Chat con Agente de Mantenimiento** (1 min)
+   - Cambiar a agente de mantenimiento
+   - Preguntar: "¿Qué buses tienen riesgo mecánico?"
+   - El agente usa SageMaker ML para predecir y recomienda intervención
 
-#### 2.1 Knowledge Base ✅
-- [x] Crear Knowledge Base en Bedrock: `ado-mobilityia-kb` (ID: `4OAVLRB8VI`)
-- [x] 5 documentos indexados y sincronizados
+5. **Alertas + Ambiental** (1 min)
+   - Mostrar la vista de alertas con OT generada
+   - Mostrar el panel de impacto ambiental con lenguaje difuso
 
-#### 2.2 Agente Combustible ✅ (parcial)
-- [x] Agente creado: `ado-agente-combustible` (ID: `5N3U0PMGXX`)
-- [x] Modelo: Amazon Nova Micro
-- [x] 3 Action Groups: consultar-telemetria, calcular-desviacion, listar-buses-activos
-- [ ] **⚠️ PENDIENTE: Asociar Knowledge Base `4OAVLRB8VI`**
-- [ ] Probar con preguntas de demo
+6. **Cierre** (30s)
+   - Resaltar: AgentCore + SageMaker ML + Knowledge Base RAG
+   - Todo en datos simulados, todo en español, todo en tiempo real
 
-#### 2.3 Agente Mantenimiento ✅ (parcial)
-- [x] Agente creado: `ado-agente-mantenimiento` (ID: `KLLFLAH0SJ`)
-- [x] Modelo: Amazon Nova Pro
-- [x] 4 Action Groups: consultar-obd, predecir-evento, buscar-patrones-historicos, generar-recomendacion
-- [ ] **⚠️ PENDIENTE: Asociar Knowledge Base `4OAVLRB8VI`**
-- [ ] Probar con preguntas de demo
+### Preguntas de alto impacto para el chat
 
-### BLOQUE 3 — SageMaker ✅ COMPLETADO
-- [x] Modelo XGBoost entrenado con datos oct-dic 2020 (C-008)
-- [x] Endpoint `ado-prediccion-eventos` desplegado y en InService
-- [x] 128 features, test de predicción exitoso
-- [x] Lambda `tool-predecir-evento` apunta al endpoint correcto
+**Combustible:**
+- "¿Qué buses tienen mayor consumo en este momento?"
+- "Analiza el bus 7313, ¿qué está causando el consumo elevado?"
 
-### BLOQUE 4 — Dashboard + Demo (2 horas)
-> **Objetivo:** Demo completa funcionando de punta a punta.
-
-#### 4.1 Dashboard
-- [ ] Opción A: QuickSight conectado a DynamoDB (via Athena)
-- [ ] Opción B: Streamlit app usando `ado-dashboard-api`
-- [ ] Visualizaciones: estado de flota, alertas activas, eficiencia, CO₂
-
-#### 4.2 Datos "trampa" para la demo
-- [ ] Pre-cargar buses con señales anómalas en DynamoDB:
-  - Bus A: Temperatura motor elevada + presión aceite baja → CRITICO
-  - Bus B: Balatas con desgaste avanzado → ELEVADO
-  - Bus C: Voltaje batería bajo + nivel urea bajo → MODERADO
-  - Bus D: Todas las señales normales → BAJO
-
-#### 4.3 Ensayo de demo
-- [ ] Probar flujo completo: simulador → DynamoDB → agentes → dashboard
-- [ ] Preparar 3-5 preguntas de alto impacto
-- [ ] Preparar backup (screenshots/video) por si hay problemas
+**Mantenimiento:**
+- "¿Qué buses tienen riesgo mecánico esta semana?"
+- "Analiza el riesgo del bus 7331 y genera una recomendación"
 
 ---
 
-## Herramientas disponibles para el deploy
+## Arquitectura desplegada
 
-Contamos con MCPs de AWS que nos permiten:
-- **AWS CLI** (`call_aws`) — Crear recursos directamente desde aquí
-- **AWS Documentation** — Consultar docs actualizadas de AgentCore, Bedrock, etc.
-- **AWS Pricing** — Verificar costos de los servicios
-- **AWS Regional Availability** — Verificar disponibilidad de servicios en us-east-1
-
-### Estrategia de deploy recomendada
-1. **CDK/CloudFormation** para infraestructura reproducible (S3, DynamoDB, IAM, Lambda)
-2. **AWS CLI** para configuraciones rápidas y verificaciones
-3. **Consola AWS** para Bedrock AgentCore (configuración visual de agentes)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FRONTEND — React + Tailwind + Leaflet                          │
+│  S3 + CloudFront (https://d1zr7g3ygmf5pk.cloudfront.net)       │
+│  Login: Cognito JWT                                             │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTPS
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  API GATEWAY HTTP API (JWT Authorizer)                          │
+│  https://sutgpijmoh.execute-api.us-east-2.amazonaws.com         │
+│                                                                 │
+│  GET /dashboard/*  →  ado-dashboard-api (Lambda)                │
+│  POST /chat        →  ado-chat-api (Lambda)                     │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+┌──────────────────┐ ┌──────────┐ ┌──────────────────────┐
+│  DynamoDB        │ │ AgentCore│ │  SageMaker           │
+│  ado-telemetria  │ │ 2 Agentes│ │  XGBoost (128 feat)  │
+│  ado-alertas     │ │ + KB RAG │ │  ado-prediccion      │
+└────────┬─────────┘ └────┬─────┘ └──────────────────────┘
+         │                │
+         │                ▼
+         │         ┌──────────────┐
+         │         │  7 Lambda    │
+         │         │  Tools       │
+         │         │  (consultar, │
+         │         │   predecir,  │
+         │         │   recomendar)│
+         │         └──────┬───────┘
+         │                │
+         ▼                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  S3 — ado-telemetry-mvp                                         │
+│  Datos simulados, catálogos, Knowledge Base, modelo ML          │
+└─────────────────────────────────────────────────────────────────┘
+         ▲
+         │
+┌────────┴────────┐
+│  Simulador      │
+│  Lambda         │
+│  (3 buses,      │
+│   desfase 15%,  │
+│   27 SPNs)      │
+└─────────────────┘
+```
 
 ---
 
-## Criterio de éxito del día
+## Servicios AWS utilizados
 
-> Demo completa de principio a fin:
-> 1. Lambda simulador inyectando datos en DynamoDB ✓
-> 2. Agente Combustible respondiendo en español con lenguaje difuso ✓
-> 3. Agente Mantenimiento generando recomendaciones preventivas ✓
-> 4. Dashboard mostrando estado de flota y alertas ✓
-> 5. Todo funcionando sin errores en menos de 5 minutos ✓
-
----
-
-## Riesgos y mitigaciones (día final)
-
-| Riesgo | Mitigación |
-|---|---|
-| AgentCore no disponible en us-east-1 | Verificar disponibilidad regional primero |
-| SageMaker tarda en entrenar | Usar fallback heurístico (ya implementado) |
-| Permisos IAM bloqueados | Solicitar permisos inmediatamente |
-| QuickSight complejo de configurar | Usar Streamlit como alternativa rápida |
-| Agente usa valores numéricos (viola C-003) | System prompt tiene instrucción explícita |
+| Servicio | Uso | Estado |
+|---|---|---|
+| Amazon Bedrock AgentCore | 2 agentes autónomos (Combustible + Mantenimiento) | ✅ Activo |
+| Amazon Bedrock Knowledge Bases | RAG con manuales técnicos y catálogos | ✅ Activo |
+| Anthropic Claude 3.5 Sonnet | Modelo de lenguaje para los agentes | ✅ Activo |
+| Amazon SageMaker | Modelo XGBoost predictivo (128 features) | ✅ InService |
+| Amazon S3 | Data Lake + hosting frontend | ✅ Activo |
+| Amazon DynamoDB | Estado en tiempo real + alertas | ✅ Activo |
+| AWS Lambda | 10 funciones (simulador, tools, APIs) | ✅ Activo |
+| Amazon API Gateway | HTTP API con JWT auth | ✅ Activo |
+| Amazon Cognito | Autenticación de usuarios | ✅ Activo |
+| Amazon CloudFront | CDN para frontend | ✅ Desplegado |
+| Amazon CloudWatch | Logs de todas las Lambdas | ✅ Activo |

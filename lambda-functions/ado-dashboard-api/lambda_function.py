@@ -118,6 +118,14 @@ def handle_flota_status() -> dict:
             "spns_fuera_de_rango": spn_fuera_rango,
             "ultimo_timestamp": record.get("timestamp", ""),
             "alertas_spn": alertas_traducidas,
+            "latitud": float(record.get("latitud", 0) or 0),
+            "longitud": float(record.get("longitud", 0) or 0),
+            "velocidad_kmh": float(record.get("velocidad_kmh", 0) or 0),
+            "rpm": float(record.get("rpm", 0) or 0),
+            "temperatura_motor_c": float(record.get("temperatura_motor_c", 0) or 0),
+            "presion_aceite_kpa": float(record.get("presion_aceite_kpa", 0) or 0),
+            "tasa_combustible_lh": float(record.get("tasa_combustible_lh", 0) or 0),
+            "nivel_combustible_pct": float(record.get("nivel_combustible_pct", 0) or 0),
         })
 
     # Sort buses: ALERTA_SIGNIFICATIVA first, then by spns_fuera_de_rango desc
@@ -360,7 +368,8 @@ def lambda_handler(event, context):
     Extracts the path from the API Gateway event and dispatches
     to the appropriate handler function.
     """
-    path = event.get("path", "") or event.get("resource", "")
+    # Support both API Gateway v1 (path) and v2 (rawPath) event formats
+    path = event.get("rawPath") or event.get("path") or event.get("resource", "")
 
     logger.info(json.dumps({
         "action": "dashboard_api_request",

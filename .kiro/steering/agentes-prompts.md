@@ -6,7 +6,20 @@ inclusion: always
 ## ADO MobilityIA MVP — Hackathon AWS Builders League 2026
 
 > **C-005:** Los agentes son de **AgentCore**, no de Bedrock Agents clásico.
-> **C-006:** Los datos de telemetría usan SPNs reales del catálogo `motor_spn` (36 variables confirmadas).
+> **C-006:** Los datos de telemetría usan SPNs reales del catálogo `motor_spn` (37 variables confirmadas).
+
+---
+
+## Estado de despliegue
+
+| Agente | Runtime ARN | Modelo | Tools |
+|---|---|---|---|
+| `AdoCombustible` | `arn:aws:bedrock-agentcore:us-east-2:084032333314:runtime/AdoCombustible_AdoCombustible-BJ7Uvb4ozE` | Claude 3.5 Sonnet | 4 (telemetría, desviación, buses activos, KB) |
+| `AdoMantenimiento` | `arn:aws:bedrock-agentcore:us-east-2:084032333314:runtime/AdoMantenimiento_AdoMantenimiento-2sL9qkC3yK` | Claude 3.5 Sonnet | 5 (OBD, predicción ML, patrones, recomendación, KB) |
+
+### Chat API
+Los agentes se invocan desde el frontend via Lambda `ado-chat-api` → `POST /chat` en API Gateway.
+La Lambda usa el SDK `bedrock-agentcore` con `invoke_agent_runtime()` y auto-detecta el agente por keywords del prompt.
 
 ---
 

@@ -11,14 +11,23 @@ inclusion: manual
 
 ---
 
+## URLs de la demo
+
+| Recurso | URL |
+|---|---|
+| **Dashboard** | `https://d1zr7g3ygmf5pk.cloudfront.net` |
+| **Login** | `demo@adomobilityia.com` / `DemoADO2026!` |
+
+---
+
 ## Estructura de la presentación (10 min total)
 
-| Segmento | Duración | Responsable |
+| Segmento | Duración | Contenido |
 |---|---|---|
-| Problema y contexto | 2 min | Presentador 1 |
-| Solución y arquitectura | 2 min | Presentador 2 |
-| Demo en vivo | 4 min | Presentador técnico |
-| Impacto estimado y cierre | 2 min | Presentador 1 |
+| Problema y contexto | 2 min | Por qué ADO necesita inteligencia operativa |
+| Solución y arquitectura | 2 min | AgentCore + SageMaker + React |
+| Demo en vivo | 4 min | Dashboard, mapa, chat con agentes |
+| Impacto y cierre | 2 min | Resultados cualitativos, servicios AWS |
 
 ---
 
@@ -28,13 +37,9 @@ inclusion: manual
 > "Mobility ADO ya tiene los datos. El problema es que esos datos nunca se convirtieron en inteligencia operativa. Hasta hoy."
 
 ### Puntos clave
-- El combustible es el mayor costo operativo de ADO — sin visibilidad granular, no se puede controlar
-- El mantenimiento es reactivo — las unidades fallan en carretera porque no hay forma de anticiparlo
-- Sin datos estructurados de emisiones, el cumplimiento regulatorio ambiental es difícil de demostrar
-- ADO ya tiene GPS en cada bus — la oportunidad es convertir esa telemetría en decisiones
-
-### Frase de cierre del segmento
-> "El problema no es la falta de datos. Es la falta de inteligencia para convertirlos en acción."
+- El combustible es el mayor costo operativo — sin visibilidad granular, no se puede controlar
+- El mantenimiento es reactivo — las unidades fallan en carretera sin anticipación
+- Sin datos estructurados de emisiones, el cumplimiento regulatorio es difícil de demostrar
 
 ---
 
@@ -43,129 +48,105 @@ inclusion: manual
 ### Mensaje central
 > "ADO MobilityIA: dos agentes autónomos de IA que convierten telemetría en decisiones operativas en tiempo real, construidos sobre Amazon Bedrock AgentCore."
 
-### Mostrar diagrama de arquitectura
-```
-Datos simulados → S3 → Lambda Simulador → DynamoDB
-                                              ↓
-                          Amazon Bedrock AgentCore (C-005)
-                     ┌──────────────────────────────┐
-                     │  Agente Combustible           │
-                     │  Agente Mantenimiento         │
-                     └──────────────────────────────┘
-                                   ↓
-                       Dashboard QuickSight
-```
-
-### Puntos clave
-- Construido sobre **Amazon Bedrock AgentCore** — orquestación nativa de agentes autónomos (C-005)
-- Datos simulados que replican fielmente la operación real de ADO (seguridad corporativa — C-004)
-- Telemetría basada en 36 SPNs reales del catálogo motor_spn (C-006)
-- Respuestas en español, en lenguaje operativo — no reportes técnicos
-- Integración sobre infraestructura existente — sin reemplazar hardware
+### Servicios AWS a mencionar
+- **Amazon Bedrock AgentCore** — 2 agentes autónomos con tools y RAG
+- **Amazon SageMaker** — Modelo XGBoost con 128 features (AUC-ROC 0.969)
+- **Amazon Bedrock Knowledge Bases** — RAG con manuales técnicos
+- **Amazon Cognito + API Gateway** — Autenticación y API segura
+- **React + CloudFront** — Dashboard profesional en tiempo real
+- **DynamoDB + Lambda** — Simulación de telemetría en tiempo real
 
 ---
 
 ## PARTE 3 — Demo en Vivo (4 min)
 
-### Preparación pre-demo (hacer ANTES de subir al escenario)
-- [ ] Lambda simulador corriendo — DynamoDB con registros de los últimos 5 min
-- [ ] Consola de Bedrock abierta con ambos agentes listos
-- [ ] Dashboard QuickSight cargado con datos simulados
-- [ ] Datos "trampa" pre-cargados: BUS-SIM-247 en ALERTA_SIGNIFICATIVA, BUS-SIM-089 con código OBD P0217
+### Preparación pre-demo
+- [ ] Invocar simulador 2-3 veces para tener datos frescos en DynamoDB
+- [ ] Verificar que el dashboard carga correctamente
+- [ ] Tener las preguntas de chat preparadas
+
+```bash
+# Inyectar datos frescos (ejecutar 2-3 veces con 10s entre cada una)
+aws lambda invoke --function-name ado-simulador-telemetria --payload '{}' --region us-east-2 /tmp/sim.json
+```
 
 ### Secuencia de demo
 
-#### Paso 1 — Mostrar el simulador funcionando (30 seg)
-> "Primero, el corazón del sistema. Esta Lambda está inyectando telemetría simulada de 15 buses en tiempo real. Cada registro representa un bus en una ruta, con datos que replican fielmente la variabilidad de una flota real."
+#### Paso 1 — Login y Mapa en Vivo (45 seg)
+1. Abrir `https://d1zr7g3ygmf5pk.cloudfront.net`
+2. Login con `demo@adomobilityia.com`
+3. Mostrar el mapa con los 3 buses moviéndose en la ruta México-Acapulco
+4. Señalar los colores: verde = eficiente, rojo = alerta
+5. Mostrar el panel derecho con vehículos que requieren atención
 
-- Mostrar DynamoDB con registros actualizándose
-- Señalar: bus_id, ruta_id, consumo_lkm, estado_consumo
+> "Aquí vemos la flota en tiempo real. Cada punto es un autobús con telemetría de 27 sensores. Los colores indican el estado de consumo."
 
-#### Paso 2 — Agente Combustible (1.5 min)
-> "Le pregunto al Agente de Combustible qué está pasando en la flota ahora mismo."
+#### Paso 2 — Click en Bus con Alerta (30 seg)
+1. Click en el bus rojo (7313 o el que tenga ALERTA_SIGNIFICATIVA)
+2. Mostrar el popup con datos en tiempo real: velocidad, RPM, temperatura, combustible
+3. Señalar las alertas activas
 
-**Pregunta 1:**
-```
-¿Qué buses están mostrando mayor consumo del esperado en este momento?
-```
-*El agente lista buses con desviaciones usando lenguaje difuso — sin porcentajes*
+> "Al hacer click vemos los datos en tiempo real: velocidad, temperatura del motor, consumo de combustible. Este bus muestra un consumo elevado."
 
-**Pregunta 2:**
-```
-Analiza el Bus SIM-247 en la ruta México-Puebla. ¿Qué está causando la desviación?
-```
-*El agente identifica causa y genera recomendación accionable sin valores numéricos*
+#### Paso 3 — Chat con Agente de Combustible (1 min)
+1. Click en "Preguntar al Agente IA" desde el popup
+2. El chat se abre pre-llenado con el bus seleccionado
+3. Enviar la pregunta
+4. Mostrar cómo el agente analiza y responde en español con recomendaciones
 
-> "En segundos, el agente identificó la causa, describió el impacto operativo y generó una recomendación para el supervisor. Sin reportes manuales, sin esperar fin de mes."
+> "Le preguntamos al agente de combustible. Usa Claude 3.5 Sonnet con acceso a la telemetría en tiempo real y la Knowledge Base con manuales técnicos."
 
-#### Paso 3 — Agente Mantenimiento (1.5 min)
-> "Ahora el Agente de Mantenimiento — el que puede evitar que una unidad falle en carretera."
+#### Paso 4 — Chat con Agente de Mantenimiento (1 min)
+1. Cambiar al agente de mantenimiento (selector en el header)
+2. Preguntar: "¿Qué buses tienen riesgo mecánico esta semana?"
+3. El agente usa SageMaker ML para predecir y genera recomendación
 
-**Pregunta 3:**
-```
-¿Qué buses tienen mayor riesgo de evento mecánico esta semana?
-```
-*El agente lista buses con nivel de riesgo cualitativo*
+> "El agente de mantenimiento usa un modelo XGBoost entrenado con datos históricos para predecir eventos mecánicos. Genera una orden de trabajo preventiva."
 
-**Pregunta 4:**
-```
-Analiza el Bus SIM-089 y genera una recomendación si es necesario.
-```
-*El agente genera recomendación preventiva con diagnóstico y urgencia*
+#### Paso 5 — Alertas y Ambiental (45 seg)
+1. Navegar a la vista de Alertas → mostrar la alerta con OT generada
+2. Navegar a Ambiental → mostrar el panel de CO₂ con lenguaje difuso
 
-> "El sistema detectó señales consistentes con patrones previos a eventos de refrigeración. Generó la recomendación preventiva antes de que el conductor note cualquier síntoma."
-
-#### Paso 4 — Dashboard (30 seg)
-> "Todo esto se refleja en tiempo real en el dashboard ejecutivo."
-
-- Mostrar QuickSight: estado de flota, alertas activas, métricas de eficiencia, CO₂ estimado
-- "Este es el panel que el Director de Operaciones consulta cada mañana."
+> "Las alertas se generan automáticamente con nivel de urgencia y componentes a revisar. El panel ambiental muestra el impacto estimado en reducción de emisiones."
 
 ---
 
-## PARTE 4 — Impacto Estimado y Cierre (2 min)
+## PARTE 4 — Impacto y Cierre (2 min)
 
-### Impacto (lenguaje difuso — C-003)
+### Resultados cualitativos (C-003 — sin valores numéricos)
+- Mejora significativa en la visibilidad del consumo de combustible
+- Anticipación de eventos mecánicos antes de que ocurran en ruta
+- Reducción notable de la variabilidad operativa entre conductores
+- Fortalecimiento del cumplimiento regulatorio ambiental (NOM-044)
 
-| Área | Impacto estimado |
-|---|---|
-| Consumo de combustible | Mejora potencial por viaje identificada y accionable |
-| Disponibilidad de flota | Mayor disponibilidad por anticipación de eventos |
-| Variabilidad operativa | Reducción sostenida entre unidades y conductores |
-| Cumplimiento ambiental | Métricas de reducción de CO₂ visibles y auditables |
+### Diferenciadores técnicos
+- **AgentCore** — Agentes autónomos con tools, RAG y ML integrados
+- **SageMaker** — Modelo predictivo real con 128 features y AUC 0.969
+- **Tiempo real** — Simulación con GPS real y 27 SPNs por bus
+- **Español** — Todo el sistema responde en español latinoamericano
 
 ### Frase de cierre
-> "ADO MobilityIA no reemplaza la experiencia de los equipos de ADO — la amplifica. Le da al supervisor información que antes no tenía. Le da al taller tiempo para prepararse. Le da al director evidencia para tomar decisiones. Y todo esto, sobre datos que ADO ya genera hoy."
-
-### Llamada a acción
-> "La pregunta no es si ADO necesita esto. La pregunta es cuánto valor operativo se está dejando sobre la mesa cada día sin convertir esos datos en inteligencia."
+> "ADO MobilityIA demuestra que la inteligencia artificial puede transformar datos de telemetría en decisiones operativas que impactan directamente la eficiencia, la seguridad y el cumplimiento ambiental de una flota de transporte."
 
 ---
 
-## Plan de contingencia
+## Preguntas de alto impacto para el chat
 
-| Problema | Acción |
-|---|---|
-| Agente tarda más de 30 segundos | Cambiar a QuickSight mientras espera |
-| Error en Bedrock | Mostrar capturas pre-grabadas de respuestas |
-| DynamoDB sin datos frescos | Disparar Lambda simulador manualmente |
-| QuickSight no carga | Mostrar capturas del dashboard en slides |
+### Combustible
+- "¿Qué buses tienen mayor consumo en este momento?"
+- "Analiza el bus 7313, ¿qué está causando el consumo elevado?"
+- "¿Cuáles son las oportunidades de mejora en eficiencia de la flota?"
+
+### Mantenimiento
+- "¿Qué buses tienen riesgo mecánico esta semana?"
+- "Analiza el riesgo del bus 7331 y genera una recomendación"
+- "¿Cuáles son las recomendaciones preventivas prioritarias para el taller?"
 
 ---
 
-## Preguntas frecuentes del jurado
+## Backup (si algo falla)
 
-**"¿Por qué datos simulados y no datos reales de ADO?"**
-> "Por seguridad de la información corporativa. Los datos operativos de una flota de esta escala son activos estratégicos sensibles. Los datos simulados replican fielmente la estructura y variabilidad de la operación real, permitiendo demostrar el valor del sistema sin comprometer información confidencial."
-
-**"¿Cómo escalan esto a producción?"**
-> "En producción, Lambda se reemplaza por AWS IoT Core + Kinesis para ingesta real desde los GPS de los buses. Bedrock AgentCore escala horizontalmente. El MVP demuestra la lógica de negocio — la infraestructura de producción es un paso de configuración, no de rediseño."
-
-**"¿Por qué Amazon Bedrock y no otra plataforma?"**
-> "Amazon Bedrock AgentCore es la plataforma de orquestación nativa de agentes autónomos con memoria, herramientas y RAG integrados en un solo servicio managed. Para un caso de uso que requiere múltiples agentes coordinados con acceso a datos en tiempo real, es la opción más directa y escalable."
-
-**"¿Cómo manejan la resistencia de los conductores al monitoreo?"**
-> "El sistema está diseñado explícitamente para esto. Los agentes generan recomendaciones de desarrollo profesional, no reportes punitivos. Eso está codificado en el system prompt — el conductor recibe coaching, no una sanción."
-
-**"¿Cuánto cuesta operar esto en AWS?"**
-> "Para el MVP del hackathon, el costo es marginal. En producción, el modelo de costos de Bedrock por token y Lambda por invocación hace que la inversión tecnológica sea significativamente menor que el valor operativo generado por la optimización de combustible y la reducción de mantenimiento correctivo."
+- Si el dashboard no carga: usar `http://localhost:3000` (dev server local)
+- Si los agentes no responden: mostrar screenshots de respuestas previas
+- Si DynamoDB está vacío: invocar el simulador manualmente desde la terminal
+- Si SageMaker falla: el sistema usa fallback heurístico automáticamente

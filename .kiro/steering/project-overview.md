@@ -82,11 +82,14 @@ Dos agentes autónomos de IA desplegados en **Amazon Bedrock AgentCore** (C-005)
 
 ## Stack tecnológico central
 
-- **Amazon Bedrock AgentCore** — Orquestación de agentes autónomos (C-005)
+- **Amazon Bedrock AgentCore** — Orquestación de 2 agentes autónomos (C-005)
 - **Anthropic Claude 3.5 Sonnet** — Narrativas en lenguaje natural (español)
-- **Amazon SageMaker** — Modelo predictivo de eventos mecánicos (con fallback heurístico)
-- **Amazon S3** — Data Lake con datos **simulados** (C-004): telemetry-data, motor_spn, data_fault
-- **AWS Lambda** — Simulador de ingesta en tiempo real (C-002) + 7 tools para agentes + dashboard API
-- **Amazon DynamoDB** — Estado en tiempo real por unidad (pivoteo de SPNs)
+- **Amazon SageMaker** — Modelo XGBoost predictivo (128 features, AUC-ROC 0.969, con fallback heurístico)
+- **Amazon S3** — Data Lake con datos **simulados** (C-004) en bucket `ado-telemetry-mvp`
+- **AWS Lambda** — 10 funciones: simulador + 7 tools para agentes + dashboard API + chat API
+- **Amazon DynamoDB** — Estado en tiempo real por unidad (26 SPNs pivoteados por registro)
 - **Amazon Bedrock Knowledge Bases** — RAG con catálogo SPN, manuales técnicos, normas NOM-044
-- **Amazon QuickSight** — Dashboard ejecutivo y métricas de emisiones CO₂ (o Streamlit como alternativa)
+- **Amazon API Gateway** — HTTP API con JWT authorizer (Cognito)
+- **Amazon Cognito** — Autenticación de usuarios del dashboard
+- **Amazon CloudFront + S3** — Frontend React desplegado en `https://d1zr7g3ygmf5pk.cloudfront.net`
+- **React + Tailwind + Leaflet** — Dashboard con mapa en vivo, chat IA, alertas, eficiencia, CO₂

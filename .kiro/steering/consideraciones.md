@@ -6,6 +6,8 @@ inclusion: always
 ## ADO Intelligence Platform — Hackathon AWS ITP LATAM
 
 > Este archivo es la fuente de verdad para todas las restricciones, decisiones y ajustes que afectan la planeación y desarrollo del proyecto. Toda nueva consideración debe registrarse aquí antes de aplicarse.
+>
+> **Estado al 2026-04-28:** Todas las consideraciones C-001 a C-008 están aplicadas y verificadas en el sistema desplegado. El MVP está funcional end-to-end con dashboard React, 2 agentes AgentCore, modelo ML SageMaker, y simulación en tiempo real.
 
 ---
 

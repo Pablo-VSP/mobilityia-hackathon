@@ -19,25 +19,35 @@ inclusion: always
 s3://ado-telemetry-mvp/hackathon-data/
 ├── raw/
 │   ├── travel_telemetry/                 ← 1,339 archivos Parquet (~447 MB)
-│   │   └── travel_telemetry_000000000000.parquet ... 
 │   ├── data_fault/                       ← 123 archivos Parquet (~6.5 MB)
-│   │   └── data_fault_000000000000.parquet ...
 │   └── motor_spn/                        ← 1 archivo Parquet (~3.6 KB)
-│       └── motor_spn_000000000000.parquet
-├── catalogo/                             ← Catálogo SPN en JSON (para Lambdas)
-│   └── motor_spn.json
+├── catalogo/
+│   └── motor_spn.json                    ← Catálogo 37 SPNs (para Lambdas)
+├── fallas-simuladas/
+│   └── data_fault.json                   ← Historial de fallas en JSON
+├── simulacion/
+│   └── viajes_consolidados.json          ← 3 viajes pre-procesados (11.7 MB)
+│                                            ~2,400 frames/viaje, 27 SPNs, GPS
+├── sample_data/
+│   └── travel_telemetry_examples_/       ← 3 Parquets originales de viajes
+├── telemetria-simulada/
+│   └── bus_*.json                        ← Datos por bus (legacy, pocos SPNs)
 ├── knowledge-base/
 │   └── docs/
-│       ├── motor_spn.json                ← Catálogo SPN para RAG
-│       ├── codigos-falla-catalogo.csv    ← Catálogo de fallas con severidad_inferencia
-│       ├── manual-reglas-mantenimiento-motor.md  ← Umbrales, intervalos, correlaciones
-│       ├── manual-reglas-ambientales-emisiones.md ← CO₂, NOM-044, clasificación ambiental
-│       ├── manual-reglas-fallas-mantenimiento.md  ← Reglas por falla, escalamiento, priorización
+│       ├── motor_spn.json
+│       ├── codigos-falla-catalogo.csv
+│       ├── manual-reglas-mantenimiento-motor.md
+│       ├── manual-reglas-ambientales-emisiones.md
+│       ├── manual-reglas-fallas-mantenimiento.md
 │       └── nom-044-resumen.pdf
 └── modelos/
     └── sagemaker/
-        └── training-data/
-            └── features_eventos_simulados.parquet
+        ├── training-data/
+        │   ├── feature_names.json        ← 128 features en orden exacto
+        │   ├── train.csv
+        │   └── validation.csv
+        ├── output/model.tar.gz           ← Modelo XGBoost entrenado
+        └── model_summary.json            ← Métricas y umbrales de riesgo
 ```
 
 > **Nota:** El bucket real es `ado-telemetry-mvp` en `us-east-2`, profile `mobilityadods`. Los datos raw ya están subidos.
