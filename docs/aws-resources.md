@@ -132,12 +132,13 @@ hackathon-data/
 |---|---|
 | Endpoint | `ado-prediccion-eventos` |
 | Estado | InService |
-| Modelo | XGBoost 1.7 (v2-optimizado) |
-| Features | ~56 (10 SPNs × 4 stats + 6 umbrales + 6 fallas + 2 contextuales) |
+| Modelo | XGBoost 1.7 (v2 optimizado) |
+| Features | 54 (40 telemetría + 6 umbrales + 2 contextuales + 6 fallas) |
+| SPNs clave | 10 (enfocados en fallas 100, 158, 86): 100, 98, 175, 110, 190, 168, 521, 84, 520, 247 |
 | Instancia | `ml.m5.large` |
-| Target | `falla_critica_14d` (falla con severidad_inferencia = 3 en 14 días) |
-| Feature Names | `s3://ado-telemetry-mvp/hackathon-data/modelos/sagemaker-v2/training-data/feature_names.json` |
-| SPNs clave | 100, 98, 175, 110, 190, 168, 521, 84, 520, 247 |
+| Training job | `sagemaker-xgboost-2026-04-28-05-58-45-775` |
+| Feature names | `s3://ado-telemetry-mvp/hackathon-data/modelos/sagemaker-v2/training-data/feature_names.json` |
+| Enfoque | Ventana 7 días, 10 SPNs clave, umbrales del manual de mantenimiento |
 
 ### Umbrales de riesgo ML
 | Score | Nivel | Urgencia |

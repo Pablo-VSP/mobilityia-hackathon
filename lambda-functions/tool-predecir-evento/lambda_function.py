@@ -449,89 +449,47 @@ def _build_contextual_features(features, records):
 def _build_csv_payload(features, fault_features, contextual_features, feature_names):
     """Build a CSV row matching the exact feature order expected by the model.
 
-    Supports both v1 (128 features, spn_{id}_{stat}_7d format) and v2
-    (~56 features, {nombre}_{stat} format) by detecting the naming convention
-    from the loaded feature_names.json.
+    Supports both v1 format (spn_{id}_{stat}_7d) and v2 format ({nombre}_{stat}).
+
+    V2 feature name format:
+      - {nombre}_{stat}  where nombre maps to a SPN ID and stat is avg/max/min/oor
+      - pct_{condition}  threshold percentage features
+      - total_oor, n_registros_ventana  contextual features
+      - fallas_*, dias_*, tiene_*  fault features
 
     Args:
         features: SPN feature dict from _build_feature_vector().
         fault_features: Dict from _build_fault_features().
         contextual_features: Dict from _build_contextual_features().
-        feature_names: Ordered list of feature names from the model.
+        feature_names: Ordered list of feature names (54 for v2, 128 for v1).
 
     Returns:
         CSV string with comma-separated values.
     """
-    # Detect model version by checking feature name format
-    is_v2 = any(
-        name in SPNS_MODELO_V2.values() or
-        any(name.startswith(f"{alias}_") for alias in SPNS_MODELO_V2.values())
-        for name in feature_names[:5]
-    )
+    # V2 nombre → SPN ID mapping
+    NOMBRE_TO_SPN = {
+        "presion_aceite": SPN_PRESION_ACEITE,    # 100
+        "nivel_aceite": SPN_NIVEL_ACEITE,        # 98
+        "temp_aceite": SPN_TEMPERATURA_ACEITE,   # 175
+        "temp_motor": SPN_TEMPERATURA_MOTOR,     # 110
+        "rpm": 190,
+        "voltaje_bat": SPN_VOLTAJE_BATERIA,      # 168
+        "freno": 521,
+        "velocidad": 84,
+        "retarder": 520,
+        "horas_motor": SPN_HORAS_MOTOR,          # 247
+    }
 
-    if is_v2:
-        return _build_csv_payload_v2(features, fault_features, contextual_features, feature_names)
-    else:
-        return _build_csv_payload_v1(features, fault_features, contextual_features, feature_names)
+    # V2 stat mapping
+    V2_STAT_MAP = {
+        "avg": "avg",
+        "max": "max",
+        "min": "min",
+        "oor": "out_of_range_count",
+    }
 
-
-def _build_csv_payload_v2(features, fault_features, contextual_features, feature_names):
-    """Build CSV payload for v2 model (~56 features).
-
-    v2 feature names use aliases like 'presion_aceite_avg', 'temp_motor_max',
-    plus threshold features like 'pct_presion_bajo_150' and fault/contextual
-    features.
-
-    Args:
-        features: SPN feature dict from _build_feature_vector().
-        fault_features: Dict from _build_fault_features() (v2 schema).
-        contextual_features: Dict with v2 threshold + contextual features.
-        feature_names: Ordered list of v2 feature names.
-
-    Returns:
-        CSV string.
-    """
-    # Build a flat dict of all v2 features for easy lookup
-    v2_features = {}
-
-    # SPN-based features: {alias}_{stat} → value
-    v2_stat_map = {"avg": "avg", "max": "max", "min": "min", "oor": "out_of_range_count"}
-    for spn_id, alias in SPNS_MODELO_V2.items():
-        spn_feat = features.get(spn_id)
-        for v2_stat, internal_key in v2_stat_map.items():
-            key = f"{alias}_{v2_stat}"
-            if spn_feat and spn_feat.get("count", 0) > 0 and internal_key in spn_feat:
-                v2_features[key] = round(float(spn_feat[internal_key]), 6)
-            else:
-                v2_features[key] = 0
-
-    # Merge fault features and contextual features (threshold features included)
-    v2_features.update(fault_features)
-    v2_features.update(contextual_features)
-
-    values = []
-    for name in feature_names:
-        if name in v2_features:
-            values.append(str(v2_features[name]))
-        else:
-            values.append("0")
-
-    return ",".join(values)
-
-
-def _build_csv_payload_v1(features, fault_features, contextual_features, feature_names):
-    """Build CSV payload for v1 model (128 features, spn_{id}_{stat}_7d format).
-
-    Args:
-        features: SPN feature dict from _build_feature_vector().
-        fault_features: Dict from _build_fault_features().
-        contextual_features: Dict from _build_contextual_features().
-        feature_names: Ordered list of 128 feature names.
-
-    Returns:
-        CSV string with 128 comma-separated values.
-    """
-    stat_map = {
+    # V1 stat mapping (legacy)
+    V1_STAT_MAP = {
         "avg": "avg",
         "max": "max",
         "min": "min",
@@ -540,27 +498,92 @@ def _build_csv_payload_v1(features, fault_features, contextual_features, feature
         "anomaly_count": "anomaly_count",
     }
 
+    # V2 threshold features computed from raw SPN values
+    def _compute_threshold_features(features):
+        """Compute percentage-based threshold features for v2."""
+        result = {}
+        # Presión aceite
+        f100 = features.get(SPN_PRESION_ACEITE)
+        if f100 and f100["count"] > 0:
+            values = _extract_spn_values_from_features(features, SPN_PRESION_ACEITE)
+            result["pct_presion_bajo_150"] = sum(1 for v in values if v < 150) / max(len(values), 1) if values else 0
+            result["pct_presion_bajo_50"] = sum(1 for v in values if v < 50) / max(len(values), 1) if values else 0
+        else:
+            result["pct_presion_bajo_150"] = 0
+            result["pct_presion_bajo_50"] = 0
+
+        # Temperatura motor
+        f110 = features.get(SPN_TEMPERATURA_MOTOR)
+        if f110 and f110["count"] > 0:
+            # Use avg/max as proxy since we don't have raw values here
+            result["pct_temp_motor_sobre_115"] = 1.0 if f110["avg"] > 115 else 0.0
+            result["pct_temp_motor_sobre_140"] = 1.0 if f110["max"] > 140 else 0.0
+        else:
+            result["pct_temp_motor_sobre_115"] = 0
+            result["pct_temp_motor_sobre_140"] = 0
+
+        # Voltaje batería
+        f168 = features.get(SPN_VOLTAJE_BATERIA)
+        if f168 and f168["count"] > 0:
+            result["pct_voltaje_bajo_12"] = 1.0 if f168["min"] < 12 else 0.0
+            result["pct_voltaje_sobre_15_5"] = 1.0 if f168["max"] > 15.5 else 0.0
+        else:
+            result["pct_voltaje_bajo_12"] = 0
+            result["pct_voltaje_sobre_15_5"] = 0
+
+        # Contextual
+        result["total_oor"] = sum(f["out_of_range_count"] for f in features.values() if f.get("count", 0) > 0)
+        result["n_registros_ventana"] = sum(f["count"] for f in features.values())
+
+        return result
+
+    threshold_features = _compute_threshold_features(features)
+
     values = []
     for name in feature_names:
+        # Check if it's a v1 format (spn_{id}_{stat}_7d)
         if name.startswith("spn_"):
-            # Parse: spn_{id}_{stat}_7d
             parts = name.split("_")
-            # spn_{id}_{stat}_7d → id is parts[1], stat is parts[2] (or parts[2]_parts[3])
             spn_id = int(parts[1])
-            # Reconstruct stat name: everything between spn_{id}_ and _7d
-            stat_suffix = "_".join(parts[2:])  # e.g. "avg_7d", "oor_count_7d"
-            stat_key = stat_suffix.replace("_7d", "")  # e.g. "avg", "oor_count"
-            internal_key = stat_map.get(stat_key, stat_key)
-
+            stat_suffix = "_".join(parts[2:]).replace("_7d", "")
+            internal_key = V1_STAT_MAP.get(stat_suffix, stat_suffix)
             spn_feat = features.get(spn_id)
             if spn_feat and internal_key in spn_feat:
                 values.append(str(round(float(spn_feat[internal_key]), 6)))
             else:
                 values.append("0")
+
+        # Check if it's a v2 SPN feature ({nombre}_{stat})
+        elif any(name.startswith(n + "_") for n in NOMBRE_TO_SPN.keys()):
+            # Find which nombre matches
+            matched = False
+            for nombre, spn_id in NOMBRE_TO_SPN.items():
+                if name.startswith(nombre + "_"):
+                    stat = name[len(nombre) + 1:]  # e.g. "avg", "max", "min", "oor"
+                    internal_key = V2_STAT_MAP.get(stat, stat)
+                    spn_feat = features.get(spn_id)
+                    if spn_feat and internal_key in spn_feat:
+                        values.append(str(round(float(spn_feat[internal_key]), 6)))
+                    else:
+                        values.append("0")
+                    matched = True
+                    break
+            if not matched:
+                values.append("0")
+
+        # Threshold features (pct_*)
+        elif name.startswith("pct_") or name in ("total_oor", "n_registros_ventana"):
+            val = threshold_features.get(name, 0)
+            values.append(str(round(float(val), 6)))
+
+        # Fault features
         elif name in fault_features:
             values.append(str(fault_features[name]))
+
+        # Contextual features (v1)
         elif name in contextual_features:
             values.append(str(round(float(contextual_features[name]), 6)))
+
         else:
             values.append("0")
 
