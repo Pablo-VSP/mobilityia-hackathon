@@ -75,11 +75,18 @@ def handle_flota_status() -> dict:
     # Load SPN catalog for name translation
     catalogo = cargar_catalogo_spn(S3_BUCKET, S3_CATALOGO_KEY)
 
-    # Keep only the latest record per bus
+    # Keep only the latest record per bus that is not in the future.
+    # The simulator writes burst ticks with future timestamps (now+10s,
+    # now+20s, ..., now+50s).  We pick the record whose timestamp is
+    # closest to "now" without exceeding it so the frontend sees a new
+    # position every ~10 seconds instead of jumping once per minute.
+    now_iso = datetime.now(timezone.utc).isoformat()
     latest_by_bus: dict[str, dict] = {}
     for record in records:
         autobus = record.get("autobus", "")
         ts = record.get("timestamp", "")
+        if ts > now_iso:
+            continue  # skip future ticks — not yet "due"
         if autobus not in latest_by_bus or ts > latest_by_bus[autobus].get("timestamp", ""):
             latest_by_bus[autobus] = record
 
