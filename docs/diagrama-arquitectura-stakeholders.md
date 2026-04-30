@@ -21,7 +21,7 @@ flowchart TB
     %% ============================================================
     %% INGESTA
     %% ============================================================
-    SIMULADOR["🔄 Simulador de Telemetría\nInyecta datos cada 10 segundos\n3 buses en ruta México–Acapulco"]
+    SIMULADOR["🔄 Simulador de Telemetría\nInyecta datos cada 10 segundos\n10 buses en ruta México–Acapulco"]
 
     %% ============================================================
     %% ALMACENAMIENTO

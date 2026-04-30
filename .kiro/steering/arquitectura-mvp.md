@@ -57,7 +57,7 @@ inclusion: always
          │
 ┌────────┴────────┐
 │  Simulador      │
-│  Lambda (3 buses│
+│  Lambda (10 bus │
 │  desfase 15%,   │
 │  27 SPNs, GPS)  │
 └─────────────────┘

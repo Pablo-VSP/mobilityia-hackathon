@@ -75,7 +75,7 @@ aws lambda invoke --function-name ado-simulador-telemetria --payload '{}' --regi
 #### Paso 1 — Login y Mapa en Vivo (45 seg)
 1. Abrir `https://d1zr7g3ygmf5pk.cloudfront.net`
 2. Login con `demo@adomobilityia.com`
-3. Mostrar el mapa con los 3 buses moviéndose en la ruta México-Acapulco
+3. Mostrar el mapa con los 10 buses moviéndose en la ruta México-Acapulco
 4. Señalar los colores: verde = eficiente, rojo = alerta
 5. Mostrar el panel derecho con vehículos que requieren atención
 

@@ -47,3 +47,6 @@ sample_data.parquet
 rutas_viajes.html
 dashboard/node_modules/
 dashboard/dist/
+
+# Backup de datos AWS (pesado, ~460 MB)
+backup/

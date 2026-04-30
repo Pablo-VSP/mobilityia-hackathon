@@ -1,5 +1,5 @@
 """
-Pre-procesa los 3 viajes de ejemplo (Parquet) en un JSON consolidado
+Pre-procesa los 10 viajes de ejemplo (Parquet) en un JSON consolidado
 optimizado para el simulador Lambda.
 
 Cada viaje se convierte en una lista ordenada de "frames" — un frame

@@ -26,8 +26,8 @@ s3://ado-telemetry-mvp/hackathon-data/
 ├── fallas-simuladas/
 │   └── data_fault.json                   ← Historial de fallas en JSON
 ├── simulacion/
-│   └── viajes_consolidados.json          ← 3 viajes pre-procesados (11.7 MB)
-│                                            ~2,400 frames/viaje, 27 SPNs, GPS
+│   └── viajes_consolidados.json          ← 10 viajes pre-procesados (~12 MB)
+│                                            300 frames/viaje, 22 SPNs, GPS
 ├── sample_data/
 │   └── travel_telemetry_examples_/       ← 3 Parquets originales de viajes
 ├── telemetria-simulada/

@@ -15,7 +15,7 @@ log = app.logger
 _lambda_client = boto3.client("lambda", region_name="us-east-2")
 _bedrock_agent_client = boto3.client("bedrock-agent-runtime", region_name="us-east-2")
 
-KNOWLEDGE_BASE_ID = "4OAVLRB8VI"
+KNOWLEDGE_BASE_ID = "VURICCT2OJ"
 
 
 def _invoke_lambda(function_name: str, parameters: list[dict]) -> dict:

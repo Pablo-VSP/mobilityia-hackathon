@@ -111,7 +111,7 @@ hackathon-data/
 ├── catalogo/motor_spn.json                    ← Catálogo 37 SPNs
 ├── fallas-simuladas/data_fault.json           ← Historial de fallas
 ├── telemetria-simulada/bus_*.json             ← Datos por bus (legacy)
-├── simulacion/viajes_consolidados.json        ← 3 viajes pre-procesados (11.7 MB)
+├── simulacion/viajes_consolidados.json        ← 10 viajes pre-procesados (~12 MB)
 ├── sample_data/travel_telemetry_examples_/    ← 3 Parquets originales
 ├── raw/travel_telemetry/                      ← 1,339 Parquets (426 MB)
 ├── raw/data_fault/                            ← 123 Parquets (6.5 MB)
@@ -156,7 +156,7 @@ Todas usan `ado-common-layer:2` y `S3_BUCKET=ado-telemetry-mvp`.
 
 | Lambda | Grupo | Memoria | Timeout | Descripción |
 |---|---|---|---|---|
-| `ado-simulador-telemetria` | Simulador | 512 MB | 30s | Simula 3 buses con desfase temporal |
+| `ado-simulador-telemetria` | Simulador | 512 MB | 30s | Simula 10 buses con desfase temporal |
 | `tool-consultar-telemetria` | Agente Combustible | 256 MB | 15s | Últimos registros de un bus |
 | `tool-calcular-desviacion` | Agente Combustible | 256 MB | 15s | Desviación de consumo vs patrón |
 | `tool-listar-buses-activos` | Agente Combustible | 256 MB | 15s | Buses con telemetría activa |
@@ -186,7 +186,7 @@ Todas usan `ado-common-layer:2` y `S3_BUCKET=ado-telemetry-mvp`.
 
 | Recurso | Valor |
 |---|---|
-| KB ID | `4OAVLRB8VI` |
+| KB ID | `VURICCT2OJ` |
 | Data Source ID | `LL4E15XKR4` |
 | Nombre | `ado-mobilityia-kb` |
 | Documentos | 5 (catálogo SPN, fallas, 3 manuales) |
@@ -211,19 +211,26 @@ Todas usan `ado-common-layer:2` y `S3_BUCKET=ado-telemetry-mvp`.
 ## Simulación
 
 ### Datos de viajes
-3 viajes pre-procesados desde Parquets reales:
+10 viajes pre-procesados desde Parquets reales (5 min cada uno, 300 frames):
 
-| Viaje | Bus | Ruta | Duración | Frames | SPNs |
+| # | Bus | Ruta | Dirección | Frames | SPNs |
 |---|---|---|---|---|---|
-| 055 | 7331 | MEX TAXQUEÑA → ACAPULCO | ~5h | 2,349 | 27 |
-| 181 | 7302 | MEX TAXQUEÑA → ACAPULCO | ~5h | 2,392 | 27 |
-| 216 | 7313 | ACAPULCO → MEX TAXQUEÑA | ~5h | 2,391 | 27 |
+| 1 | 7301 | MEX TAXQUEÑA → ACAPULCO | Ida | 300 | 22 |
+| 2 | 7313 | MEX TAXQUEÑA → ACAPULCO | Ida | 300 | 22 |
+| 3 | 7303 | MEX TAXQUEÑA → ACAPULCO | Ida | 300 | 22 |
+| 4 | 7317 | MEX TAXQUEÑA → ACAPULCO | Ida | 300 | 22 |
+| 5 | 7321 | ACAPULCO → MEX TAXQUEÑA | Vuelta | 300 | 22 |
+| 6 | 7312 | ACAPULCO → MEX TAXQUEÑA | Vuelta | 300 | 22 |
+| 7 | 7302 | ACAPULCO → MEX TAXQUEÑA | Vuelta | 300 | 22 |
+| 8 | 7324 | ACAPULCO → MEX TAXQUEÑA | Vuelta | 300 | 22 |
+| 9 | 7315 | ACAPULCO → MEX TAXQUEÑA | Vuelta | 300 | 22 |
+| 10 | 7327 | ACAPULCO → MEX TAXQUEÑA | Vuelta | 300 | 22 |
 
 ### Configuración del simulador
-- **Desfase:** 15% entre buses (~45 min de diferencia)
-- **Speedup:** 3x (STEP_SECONDS=30, viaje de 5h en ~1.7h)
-- **Trigger:** EventBridge Scheduler rate(10 seconds) — pendiente de configurar
-- **Datos:** `viajes_consolidados.json` (11.7 MB, cacheado en memoria)
+- **Buses:** 10 (4 ida + 6 vuelta, fragmentos GPS sin solapamiento)
+- **Burst mode:** 6 ticks × 10s = 60s por invocación (resolución efectiva de 10s)
+- **Trigger:** EventBridge Scheduler rate(1 minute)
+- **Datos:** `viajes_consolidados.json` (~12 MB, cacheado en memoria)
 
 ### Invocar manualmente
 ```bash

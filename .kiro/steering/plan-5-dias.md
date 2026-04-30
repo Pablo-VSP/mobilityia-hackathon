@@ -26,7 +26,7 @@ inclusion: always
 - 2 Agentes desplegados en Amazon Bedrock AgentCore:
   - `AdoCombustible` — Claude 3.5 Sonnet, 4 tools (telemetría, desviación, buses activos, KB)
   - `AdoMantenimiento` — Claude 3.5 Sonnet, 5 tools (OBD, predicción ML, patrones, recomendación, KB)
-- Knowledge Base `ado-mobilityia-kb` (ID: `4OAVLRB8VI`) con 5 documentos indexados
+- Knowledge Base `ado-mobilityia-kb` (ID: `VURICCT2OJ`) con 5 documentos indexados
 - Ambos agentes responden en español con lenguaje difuso (C-003)
 
 ### ✅ COMPLETADO — Modelo ML (SageMaker)
@@ -37,7 +37,7 @@ inclusion: always
 - Predicción ML verificada: score 0.873 para bus con señales anómalas
 
 ### ✅ COMPLETADO — Simulación en Tiempo Real
-- 3 viajes reales pre-procesados desde Parquets (27 SPNs, ~2,400 frames cada uno)
+- 10 viajes pre-procesados desde Parquets (27 SPNs, 300 frames cada uno)
 - Simulador reescrito: lee `viajes_consolidados.json`, desfase 15% entre buses, speedup 3x
 - Buses se mueven con GPS real a lo largo de la ruta México-Acapulco
 - Datos ricos en DynamoDB: 26 SPNs por registro, campos planos, alertas, estado de consumo
@@ -89,7 +89,7 @@ inclusion: always
 | Cognito Client ID | `7f05s6kerku5ejb58odjj4b1fl` |
 | Agente Combustible ARN | `arn:aws:bedrock-agentcore:us-east-2:084032333314:runtime/AdoCombustible_AdoCombustible-BJ7Uvb4ozE` |
 | Agente Mantenimiento ARN | `arn:aws:bedrock-agentcore:us-east-2:084032333314:runtime/AdoMantenimiento_AdoMantenimiento-2sL9qkC3yK` |
-| Knowledge Base | `4OAVLRB8VI` (`ado-mobilityia-kb`) |
+| Knowledge Base | `VURICCT2OJ` (`ado-mobilityia-kb`) |
 | SageMaker Endpoint | `ado-prediccion-eventos` (InService) |
 | DynamoDB Telemetría | `ado-telemetria-live` |
 | DynamoDB Alertas | `ado-alertas` |
@@ -109,7 +109,7 @@ inclusion: always
    - Ingresar con `demo@adomobilityia.com`
 
 2. **Mapa en Vivo** (1 min)
-   - Mostrar 3 buses moviéndose en la ruta México-Acapulco
+   - Mostrar 10 buses moviéndose en la ruta México-Acapulco
    - Señalar los colores: verde (eficiente), rojo (alerta)
    - Click en un bus con alerta → popup con datos en tiempo real
 
@@ -188,7 +188,7 @@ inclusion: always
 ┌────────┴────────┐
 │  Simulador      │
 │  Lambda         │
-│  (3 buses,      │
+│  (10 buses,     │
 │   desfase 15%,  │
 │   27 SPNs)      │
 └─────────────────┘
