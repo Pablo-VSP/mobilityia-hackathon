@@ -1,12 +1,12 @@
 const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-  EFICIENTE: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: 'Eficiente' },
-  ALERTA_MODERADA: { bg: 'bg-amber-500/20', text: 'text-amber-400', label: 'Alerta Moderada' },
-  ALERTA_SIGNIFICATIVA: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Alerta Significativa' },
-  SIN_DATOS: { bg: 'bg-slate-500/20', text: 'text-slate-400', label: 'Sin Datos' },
-  BAJO: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', label: 'Bajo' },
-  MODERADO: { bg: 'bg-amber-500/20', text: 'text-amber-400', label: 'Moderado' },
-  ELEVADO: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: 'Elevado' },
-  CRITICO: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'Crítico' },
+  EFICIENTE: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Eficiente' },
+  ALERTA_MODERADA: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Alerta Moderada' },
+  ALERTA_SIGNIFICATIVA: { bg: 'bg-red-100', text: 'text-red-700', label: 'Alerta Significativa' },
+  SIN_DATOS: { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Sin Datos' },
+  BAJO: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Bajo' },
+  MODERADO: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Moderado' },
+  ELEVADO: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Elevado' },
+  CRITICO: { bg: 'bg-red-100', text: 'text-red-700', label: 'Crítico' },
 };
 
 export default function StatusBadge({ status, className = '' }: { status: string; className?: string }) {

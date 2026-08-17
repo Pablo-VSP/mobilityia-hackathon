@@ -22,8 +22,8 @@ export default function ChatBubble({ role, content, agente, loading, isLatest }:
         <div className="max-w-[70%] rounded-2xl px-4 py-3 bg-red-600 text-white">
           <p className="text-sm whitespace-pre-wrap">{content}</p>
         </div>
-        <div className="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center shrink-0 mt-1">
-          <User className="w-4 h-4 text-slate-300" />
+        <div className="w-8 h-8 bg-slate-200 rounded-lg flex items-center justify-center shrink-0 mt-1">
+          <User className="w-4 h-4 text-slate-600" />
         </div>
       </div>
     );
@@ -34,9 +34,9 @@ export default function ChatBubble({ role, content, agente, loading, isLatest }:
       <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center shrink-0 mt-1">
         <Bot className="w-4 h-4 text-white" />
       </div>
-      <div className="max-w-[75%] rounded-2xl px-4 py-3 bg-slate-800 border border-slate-700">
+      <div className="max-w-[75%] rounded-2xl px-4 py-3 bg-white border border-slate-200 shadow-sm">
         {loading ? (
-          <div className="flex items-center gap-2 text-slate-400">
+          <div className="flex items-center gap-2 text-slate-500">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span className="text-sm">Analizando con agente de {agente}...</span>
           </div>
@@ -47,10 +47,10 @@ export default function ChatBubble({ role, content, agente, loading, isLatest }:
               <span className="inline-block w-2 h-4 bg-red-500 animate-pulse ml-0.5 align-middle" />
             )}
             {agente && done && (
-              <p className="text-xs text-slate-500 mt-2 flex items-center gap-1 border-t border-slate-700 pt-2">
-                {agente.includes('combustible') && <><Fuel className="w-3 h-3 text-amber-400" /><span className="text-amber-400">Combustible</span></>}
+              <p className="text-xs text-slate-400 mt-2 flex items-center gap-1 border-t border-slate-100 pt-2">
+                {agente.includes('combustible') && <><Fuel className="w-3 h-3 text-amber-500" /><span className="text-amber-600">Combustible</span></>}
                 {agente.includes(',') && <span className="mx-1">+</span>}
-                {agente.includes('mantenimiento') && <><Wrench className="w-3 h-3 text-blue-400" /><span className="text-blue-400">Mantenimiento</span></>}
+                {agente.includes('mantenimiento') && <><Wrench className="w-3 h-3 text-blue-500" /><span className="text-blue-600">Mantenimiento</span></>}
                 {!agente.includes('combustible') && !agente.includes('mantenimiento') && <span>Agente: {agente}</span>}
               </p>
             )}

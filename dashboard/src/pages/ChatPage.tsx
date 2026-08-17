@@ -85,17 +85,17 @@ export default function ChatPage() {
   const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-slate-50">
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex items-center gap-3 shrink-0">
-        <MessageSquare className="w-6 h-6 text-red-400" />
+      <div className="p-4 border-b border-slate-200 bg-white flex items-center gap-3 shrink-0 shadow-sm">
+        <MessageSquare className="w-6 h-6 text-red-500" />
         <div>
-          <h1 className="text-white font-bold">Chat con Agentes IA</h1>
-          <p className="text-slate-400 text-xs flex items-center gap-2">
-            <span className="flex items-center gap-1"><Fuel className="w-3 h-3 text-amber-400" /> Combustible</span>
-            <span className="text-slate-600">+</span>
-            <span className="flex items-center gap-1"><Wrench className="w-3 h-3 text-blue-400" /> Mantenimiento</span>
-            <span className="text-slate-600">— respuesta unificada</span>
+          <h1 className="text-slate-800 font-bold">Chat con Agentes IA</h1>
+          <p className="text-slate-500 text-xs flex items-center gap-2">
+            <span className="flex items-center gap-1"><Fuel className="w-3 h-3 text-amber-500" /> Combustible</span>
+            <span className="text-slate-300">+</span>
+            <span className="flex items-center gap-1"><Wrench className="w-3 h-3 text-blue-500" /> Mantenimiento</span>
+            <span className="text-slate-300">— respuesta unificada</span>
           </p>
         </div>
       </div>
@@ -104,9 +104,9 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <Bot className="w-16 h-16 text-slate-600 mb-4" />
-            <h2 className="text-white text-xl font-bold mb-2">ADO MobilityIA</h2>
-            <p className="text-slate-400 mb-6 max-w-md">
+            <Bot className="w-16 h-16 text-slate-300 mb-4" />
+            <h2 className="text-slate-800 text-xl font-bold mb-2">ADO MobilityIA</h2>
+            <p className="text-slate-500 mb-6 max-w-md">
               Ambos agentes responden a tu pregunta simultáneamente.
               Combustible analiza consumo y eficiencia. Mantenimiento evalúa riesgo mecánico.
             </p>
@@ -115,9 +115,9 @@ export default function ChatPage() {
                 <button
                   key={i}
                   onClick={() => handleSend(q.text)}
-                  className="flex items-center gap-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left text-sm text-slate-300 transition-colors"
+                  className="flex items-center gap-2 p-3 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-left text-sm text-slate-600 transition-colors shadow-sm"
                 >
-                  <q.icon className="w-4 h-4 text-slate-500 shrink-0" />
+                  <q.icon className="w-4 h-4 text-slate-400 shrink-0" />
                   {q.text}
                 </button>
               ))}
@@ -139,7 +139,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/50 shrink-0">
+      <div className="p-4 border-t border-slate-200 bg-white shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
         <form onSubmit={e => { e.preventDefault(); handleSend(); }} className="flex gap-2">
           <input
             ref={inputRef}
@@ -148,12 +148,12 @@ export default function ChatPage() {
             onChange={e => setInput(e.target.value)}
             placeholder="Pregunta sobre la flota — ambos agentes responden..."
             disabled={sending}
-            className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-50"
+            className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 text-white rounded-xl transition-colors"
+            className="px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-200 text-white rounded-xl transition-colors"
           >
             <Send className="w-5 h-5" />
           </button>

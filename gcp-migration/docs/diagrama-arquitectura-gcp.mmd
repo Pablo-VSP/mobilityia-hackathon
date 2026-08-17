@@ -1,0 +1,140 @@
+flowchart TB
+    %% ============================================================
+    %% USUARIOS
+    %% ============================================================
+    subgraph USUARIOS["👥 USUARIOS"]
+        direction LR
+        DIRECTOR["🏢 Director\nde Operaciones"]
+        SUPERVISOR["👷 Supervisor\nde Flota"]
+        TALLER["🔧 Jefe de\nTaller"]
+    end
+
+    %% ============================================================
+    %% FRONTEND
+    %% ============================================================
+    subgraph FRONTEND["📱 FRONTEND — React + Tailwind + Leaflet"]
+        direction LR
+        MAPA["🗺️ Mapa\nen Vivo"]
+        ALERTAS["🔔 Alertas\ny OTs"]
+        EFICIENCIA["⛽ Eficiencia\nde Flota"]
+        AMBIENTAL["🌿 Impacto\nAmbiental"]
+        CHAT["💬 Chat\ncon IA"]
+    end
+
+    FIREBASE_HOST["🌐 Firebase Hosting\n(CDN Global, gratis)"]
+    FIREBASE_AUTH["🔑 Firebase Auth\n(JWT, 50k MAU gratis)"]
+
+    %% ============================================================
+    %% API LAYER — Cloud Run
+    %% ============================================================
+    subgraph API_LAYER["☁️ CLOUD RUN — API Layer"]
+        direction LR
+        API_DASH["📊 api-dashboard\n(FastAPI)\n─────────\nGET /dashboard/*\n4 endpoints"]
+        CHAT_API["💬 chat-api\n(FastAPI)\n─────────\nPOST /chat\nRouter de agentes"]
+    end
+
+    %% ============================================================
+    %% INTELIGENCIA — Agentes
+    %% ============================================================
+    subgraph AGENTES["🧠 AGENTES IA — Cloud Run"]
+        direction LR
+        COMBUSTIBLE["🔥 agente-combustible\n─────────────\nGemini 1.5 Flash\n+ Function Calling\n+ FAISS RAG\n+ 4 Tools locales"]
+        MANTENIMIENTO["🔧 agente-mantenimiento\n─────────────\nGemini 1.5 Flash\n+ Function Calling\n+ XGBoost embebido\n+ FAISS RAG\n+ 4 Tools locales"]
+    end
+
+    %% ============================================================
+    %% IA SERVICES
+    %% ============================================================
+    subgraph IA_SUPPORT["⚡ Servicios IA (in-memory, $0)"]
+        direction LR
+        GEMINI["💬 Gemini 1.5 Flash\n(Vertex AI)\n$0.075/1M tokens"]
+        XGBOOST["📊 XGBoost\n(in-container)\nModelo 5 MB"]
+        FAISS["📚 FAISS\n(in-memory)\n5 docs KB"]
+    end
+
+    %% ============================================================
+    %% INGESTA — Pub/Sub + Ingestor
+    %% ============================================================
+    subgraph INGESTA["� INGESTA EN TIEMPO REAL"]
+        direction TB
+        PUBSUB["📨 Cloud Pub/Sub\ntopic: telemetria-raw\n─────────\nBuffer streaming\nat-least-once\nretención 7 días"]
+        INGESTOR["⚙️ ingestor\n(Cloud Run)\n─────────\nProcesa mensajes\nPivotea SPNs\nClasifica consumo\nDetecta alertas\nAuto-escala"]
+    end
+
+    %% ============================================================
+    %% DATA LAYER
+    %% ============================================================
+    subgraph DATA["🗄️ DATA LAYER"]
+        direction LR
+        FIRESTORE["⚡ Cloud Firestore\n─────────\ntelemetria-live\nalertas\n─────────\nEstado actual\n(TTL 24h)\nDashboard + Agentes\nconsultan aquí"]
+        BIGQUERY["� BigQuery\n─────────\ntelemetria_historica\nfallas\n─────────\nHistorial completo\n(meses/años)\nParticionado por fecha\nClusterizado por bus\nAgentes consultan\npatrones aquí"]
+        GCS["📦 Cloud Storage\n─────────\nCatálogo SPN\nEmbeddings FAISS\nModelo XGBoost"]
+    end
+
+    %% ============================================================
+    %% FUENTES DE DATOS
+    %% ============================================================
+    subgraph BUSES["� FLOTA REAL — 2,000+ Buses"]
+        direction LR
+        GPS["🛰️ GPS\nUbicación\nen tiempo real"]
+        SENSORES["⚙️ 27 Sensores\nMotor, frenos,\ncombustible\n(OBD/J1939)"]
+        FALLAS["⚠️ Códigos\nde falla\n(DTC)"]
+    end
+
+    %% ============================================================
+    %% CONEXIONES — Usuario → Frontend → API
+    %% ============================================================
+    USUARIOS --> FRONTEND
+    FRONTEND --> FIREBASE_HOST
+    FIREBASE_HOST --> FIREBASE_AUTH
+    FIREBASE_AUTH --> API_LAYER
+
+    %% API → Datos y Agentes
+    API_DASH --> FIRESTORE
+    CHAT_API --> AGENTES
+
+    %% Agentes → IA services + Datos
+    COMBUSTIBLE --> GEMINI
+    COMBUSTIBLE --> FAISS
+    COMBUSTIBLE --> FIRESTORE
+    MANTENIMIENTO --> GEMINI
+    MANTENIMIENTO --> XGBOOST
+    MANTENIMIENTO --> FAISS
+    MANTENIMIENTO --> FIRESTORE
+    MANTENIMIENTO --> BIGQUERY
+    COMBUSTIBLE --> BIGQUERY
+
+    %% Ingesta: Buses → Pub/Sub → Ingestor → Data stores
+    BUSES --> PUBSUB
+    PUBSUB --> INGESTOR
+    INGESTOR --> FIRESTORE
+    INGESTOR --> BIGQUERY
+
+    %% GCS alimenta agentes (modelo, embeddings, catálogo)
+    GCS --> COMBUSTIBLE
+    GCS --> MANTENIMIENTO
+
+    %% ============================================================
+    %% ESTILOS
+    %% ============================================================
+    classDef userStyle fill:#1E293B,stroke:#0F172A,color:#fff,rx:12
+    classDef frontStyle fill:#06B6D4,stroke:#0891B2,color:#fff,rx:10
+    classDef firebaseStyle fill:#F59E0B,stroke:#D97706,color:#fff,rx:10
+    classDef apiStyle fill:#4285F4,stroke:#1A73E8,color:#fff,rx:10
+    classDef agentStyle fill:#8B5CF6,stroke:#7C3AED,color:#fff,rx:10
+    classDef iaStyle fill:#A78BFA,stroke:#7C3AED,color:#fff,rx:8
+    classDef dataStyle fill:#34A853,stroke:#1E8E3E,color:#fff,rx:10
+    classDef ingestStyle fill:#EA4335,stroke:#C5221F,color:#fff,rx:10
+    classDef busStyle fill:#3B82F6,stroke:#2563EB,color:#fff,rx:10
+    classDef pubsubStyle fill:#FF6D01,stroke:#E65100,color:#fff,rx:10
+
+    class DIRECTOR,SUPERVISOR,TALLER userStyle
+    class MAPA,ALERTAS,EFICIENCIA,AMBIENTAL,CHAT frontStyle
+    class FIREBASE_HOST,FIREBASE_AUTH firebaseStyle
+    class API_DASH,CHAT_API apiStyle
+    class COMBUSTIBLE,MANTENIMIENTO agentStyle
+    class GEMINI,XGBOOST,FAISS iaStyle
+    class FIRESTORE,BIGQUERY,GCS dataStyle
+    class INGESTOR ingestStyle
+    class PUBSUB pubsubStyle
+    class GPS,SENSORES,FALLAS busStyle
